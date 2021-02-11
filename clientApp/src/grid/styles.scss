@@ -1,0 +1,423 @@
+$rowHeight: 26px;
+
+$clrHeader: #42433e;
+$clrHeaderFont: #b0b1ab;
+$clrHeaderSelected: #3e3d32;
+$clrHeaderFontSelected: #f8f8f2;
+
+$clrHeaderButtonOver: #52534e;
+
+$clrCell: #282923;
+$clrCellBorder: #61615b;
+$clrCellSelected: #48473d;
+$clrLine2: #474842;
+$clrGridBorder: #1d1f1a;
+
+$clrFont: #f8f8f2;
+$clrFontYellow: #e7db74;
+$clrFontOrange: #fd9622;
+$clrFontRed: #f92472;
+$clrFontSky: #5ed8ef;
+$clrFontGreen: #a6e22b;
+$clrFontGrey: #90918b;
+
+$fontSizeCell: 12px;
+$fontSizeHeader: 12px;
+
+$clrScroll: #383934;
+$clrScrollOver: #484944;
+$clrThumb: #757672;
+$clrThumbOver: #959692;
+
+$clrFilterOutline: #5ed8ef;
+$clrFixedLine: #5ed8ef;
+
+$chkBackColor: #282923;
+$chkBackColorOver: #48473d;
+$chkFontSize: $fontSizeCell;
+$chkFontColor: #f8f8f2;
+
+$clrWidgetBack: #1e1f1c;
+$clrWidgetColor: #f8f8f2;
+$clrWidgetElem: #42433e;
+$clrWidgetElemSelected: #52534e;
+
+
+.wrapGrid {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: $clrHeader;
+  outline: none;
+}  
+
+.wrapContainer {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  color: $clrFont;
+  font-size: $fontSizeCell;
+  border: 1px solid $clrCellBorder;
+}  
+
+.wrapRow {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wrapColumn {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.headCorner {
+  border-right: 1px solid $clrCellBorder;
+  border-bottom: 1px solid $clrCellBorder;
+  background-color: $clrHeader;
+  padding: 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  overflow: hidden;
+  font-size: $fontSizeHeader;
+  color: $clrHeaderFont;
+}
+
+.headerCornerColumn {
+  position: relative;
+  overflow: hidden;
+}
+
+.columns {
+  background-color: $clrHeader;
+  overflow: hidden;
+}
+
+.rowHeader {
+  background-color: $clrHeader;
+  overflow: hidden;
+  font-size: $fontSizeHeader;
+  color: $clrHeaderFont;
+}
+
+.columnsDiv {
+  position: relative;
+  cursor: default;
+  overflow: hidden;
+}
+
+.column {
+  border-right: 1px solid $clrCellBorder;
+  border-bottom: 1px solid $clrCellBorder;
+  background-color: $clrHeader;
+  position: absolute;
+}
+
+.columnTitle {
+  padding: 4px;
+  display: inline-block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+  font-size: $fontSizeHeader;
+  color: $clrHeaderFont;
+}
+
+.columnHederButton {
+  position: absolute;
+  text-align: center;
+  top: 0px;
+  right: 0px;
+  padding-top: 1px;
+  cursor: pointer;
+}
+
+.columnHederButtonPressed {
+  background-color: $clrHeaderButtonOver;
+}
+
+.columnHederButton:hover {
+  background-color: $clrHeaderButtonOver;
+}
+
+
+/* RowHeader.js */
+.rowCells {
+  cursor: default;
+}
+
+.rowHeaderLine {
+  display: flex;
+}
+
+.rowCell {
+  border-right: 1px solid $clrCellBorder;
+  border-bottom: 1px solid $clrCellBorder;
+  background-color: $clrHeader;
+  padding: 4px;
+  text-align: center;
+  overflow: hidden;
+  flex: 1 1;
+}
+
+/* Data Container.js */
+.dataContainer {
+  overflow: hidden;
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.dataCells {
+  flex-basis: $rowHeight;
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.dataCell {
+  border-right: 1px solid $clrCellBorder;
+  border-bottom: 1px solid $clrCellBorder;
+  border-collapse: collapse;
+  background-color: $clrCell;
+  color: $clrFont;
+  padding: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.selectedCell {
+  background-color: $clrCellSelected !important;
+}
+
+.dataCellEditor {
+  box-sizing: border-box;
+  outline: none;
+  border: none;
+  background-color: $clrCell;
+  color: $clrFont;
+  outline: 1px solid $clrFilterOutline;
+  z-index: 10;
+  margin-left: 1px;
+  margin-right: 1px;
+  padding: 0 3px;
+}
+
+.fixedLine {
+  border-right: 1px solid $clrFixedLine;
+}
+
+.alignRight {
+	text-align: right;
+}
+
+.selectedHeader {
+  color: $clrHeaderFontSelected;
+  background-color: $clrHeaderSelected !important;
+}
+
+.resizeCursor {
+  cursor: col-resize;
+}
+
+.sbMain {
+  z-index: 9;
+  background-color: $clrScroll;
+  border-radius: 3px;
+  cursor: default;
+}
+
+.sbMain:hover {
+  background-color: $clrScrollOver;
+}
+
+.sbThumb {
+  position: relative;
+  background-color: $clrThumb;
+  border-radius: 3px;
+  cursor: default;
+}
+
+.sbThumb:hover {
+  background-color: $clrThumbOver;
+}
+
+.sbMarker {
+  position: relative;
+  background-color: $clrFontYellow;
+}
+
+.overlayLayer {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0)
+}
+
+.columnFilterBox {
+  position: fixed;
+  z-index: 11;
+  background-color: $clrHeaderButtonOver;
+  color: #000000;
+  border-radius: 0 0 3px 3px;
+  outline: 1px solid $clrFilterOutline;
+}
+
+.filterSearchBox {
+  box-sizing: border-box;
+  font-size: $fontSizeCell;
+  background-color: rgb(59, 59, 59);
+  color: rgb(245, 248, 250);
+  border: 1px solid $clrHeaderButtonOver;
+  border-radius: 3px;
+  outline: none;
+}
+
+.filterDoneButton {
+  position: absolute;
+  text-align: center;
+  top: 1px;
+  cursor: pointer;
+  background-color: rgb(59, 59, 59);
+  color: rgb(245, 248, 250);
+}
+
+.filterDoneButton:hover {
+  background-color: $clrHeaderButtonOver;
+}
+
+
+.filterOptionBox {
+  box-sizing: border-box;
+  border-left: 1px solid $clrHeaderButtonOver;
+  border-right: 1px solid $clrHeaderButtonOver;
+  border-bottom: 1px solid $clrHeaderButtonOver;
+}
+
+.filterValueBox {
+  margin: 0 1px 1px 1px;
+  background-color: rgb(59, 59, 59);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.filterValueItems {
+  flex: 1 1;
+}
+
+.filterValueNoItems {
+  flex: 1 1;
+  padding: 0 4px;
+  background-color: $clrFontRed;
+  height: $rowHeight;
+  line-height: 22px;
+  font-size: $chkFontSize;
+  color: $chkFontColor;
+}
+
+.chkBox {
+  background-color: $chkBackColor;
+  font-size: $chkFontSize;
+  color: $chkFontColor;
+  display: flex;
+  flex-flow: row nowrap;
+  cursor: default;
+}
+
+.chkBox:hover {
+  background-color: $chkBackColorOver;
+}
+
+.chkCheckBox, .chkColorBox {
+  text-align: center;
+  flex-basis: $rowHeight;
+  line-height: $rowHeight - 4;
+}
+
+.chkTitle {
+  line-height: $rowHeight - 2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 4px;
+  flex: 1;
+}
+
+.findDialog {
+  position: fixed;
+  z-index: 11;
+  background-color: $clrWidgetBack;
+  height: $rowHeight + 13;
+  outline: 1px solid $clrFilterOutline;
+  color: $clrWidgetColor;
+  padding: 6px 4px;
+}
+
+.findMainElem {
+  display: inline-block;
+  outline: 1px solid $clrCellBorder;
+  width: 160px + 26px; // input box + buttons
+}
+
+.findInputBox {
+  box-sizing: border-box;
+  font-size: $fontSizeCell;
+  background-color: $clrWidgetElem;
+  color: $clrWidgetColor;
+  border: none;// 1px solid $clrCellBorder;
+  outline: none;
+  height: $rowHeight;
+  width: 160px;
+}
+
+.findResultBox {
+  box-sizing: border-box;
+  display: inline-block;
+  width: 106px;
+  height: $rowHeight;
+  margin: 0 2px;
+  font-size: $fontSizeCell;
+  text-align: center;
+}
+
+.findInputButton {
+  box-sizing: border-box;
+  display: inline-block;
+  color: #848580;
+  width: $rowHeight;
+  height: $rowHeight;
+  text-align: center;
+  cursor: pointer;
+  background-color: $clrWidgetElem;
+}
+
+.findButtonPressed {
+  color: #fff; // #cececd;
+  background-color: $clrWidgetElemSelected;
+  // border: 1px solid $clrCellBorder;
+}
+
+.findNavitButton {
+  box-sizing: border-box;
+  display: inline-block;
+  color: #848580;
+  width: $rowHeight;
+  height: $rowHeight;
+  text-align: center;
+  cursor: pointer;
+  background-color: $clrWidgetBack;
+  margin-left: 2px;
+}
+
+.findInputButton:hover, .findNavitButton:hover {
+  color: #fff;
+}

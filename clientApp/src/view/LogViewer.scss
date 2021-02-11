@@ -1,0 +1,22 @@
+$pageHeight: calc(100vh - 54px);
+$categoryHeight: 48px;
+$lineMapSize: 64px;
+
+
+.viewerMain {
+	display: flex;
+	flex-flow: row nowrap;
+	color: black;
+	height: $pageHeight;
+	width: 100%;
+}
+
+.gridBox {
+	display: flex;
+	flex: 1 1;
+}
+
+.mapBox {
+	width: $lineMapSize;
+	flex-basis: $lineMapSize;
+}

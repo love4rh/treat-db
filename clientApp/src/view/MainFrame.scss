@@ -1,0 +1,169 @@
+$headerHeight: 54px;
+$bodyHeight: calc(100vh - 54px);
+
+
+.mainWrap {
+  min-height: 100vh;
+  min-width: 100vw;
+}
+
+.mainHeader {
+	height: $headerHeight;
+	width: 100vw;
+	background-color: #1e1f1c;
+	color: white;
+	display: flex;
+	flex-direction: row;
+	padding: 0 10px;
+}
+
+.mainTitle {
+	margin: 0 4px;
+	display: flex;
+	align-items: center;
+	font-weight: bolder;
+	font-size: 1.2rem;	
+	flex: 1;
+}
+
+.mainMenuButton {
+	display: flex;
+	align-items: center;
+	padding: 0 8px;
+	cursor: pointer;
+}
+
+.mainMenuButton:hover {
+	background-color: #20303d;
+}
+
+.mainMenuButtonDisabled {
+	color: #777;
+	cursor: default;
+}
+
+.scrollLock {
+	height: $bodyHeight;
+	overflow-x: hidden;
+}
+
+.mainBody {
+	min-height: $bodyHeight;
+	background-color: #394b59;
+}
+
+.mainBodyLimit {
+	min-height: $bodyHeight;
+	background-color: #282923;
+	overflow: hidden;
+}
+
+.blockedLayer {
+	width: 100%;
+	height: 100%;
+	position: fixed;
+	left: 0px;
+	top: 0px;
+	background-color: rgba(0, 0, 0, 0.5);
+}
+
+.spinnerBox {
+	position: absolute;
+	left: calc(50% - 14px);
+	top: calc(50% - 14px);
+}
+
+.toastBox {
+	min-width: 300px;
+	position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.sideMenuWrap {
+	position: absolute;
+	top: $headerHeight;
+	height: $bodyHeight;
+	background-color: #20303d;
+	color: white;
+	overflow-x: hidden;
+	width: 280px;
+	z-index: 999;
+}
+
+.menuBox {
+	overflow-x: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.menuItem {
+	border-bottom: 1px solid #40505d;
+	cursor: pointer;
+	overflow: hidden;
+	white-space: nowrap;
+	display: flex;
+	align-items: center;
+	flex: 0 0 3rem;
+	padding: 0 10px;
+}
+
+.menuItem:hover {
+	background-color: #40505d;
+}
+
+.menuItemDisabled {
+	border-bottom: 1px solid #40505d;
+	overflow: hidden;
+	white-space: nowrap;
+	display: flex;
+	align-items: center;
+	flex: 0 0 3rem;
+	padding: 0 10px;
+	color: #999;
+}
+
+.menuItemDisabled:hover {
+	background-color: #40505d;
+}
+
+.menuNoBorder {
+	border-bottom: none !important;
+}
+
+
+.gotoMenu {
+	height: 2rem;
+	padding: 5px 10px;
+	white-space: nowrap;
+}
+
+.gotoMenu:link, .gotoMenu:visited  {
+	color: #ddd;
+}
+
+.overlayLayer {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0)
+}
+
+.inputOverlay {
+	position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+	background-color: rgba(0, 0, 0, 0.65)
+}
+
+.mainDesc {
+	color: darkgray;
+  margin: auto;
+  width: 760px;
+}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<treatPM version="1.0">
+  <setting>
+    <id>TubroK.Analyzer.PMLOG</id>
+
+    <folder>
+      <!-- 임시작업 폴더 -->
+      <param name="temporary"><![CDATA[./temporary]]></param>
+      <!-- 로그 분석 결과 저장 폴더 -->
+      <param name="result"><![CDATA[./result]]></param>
+      <param name="vroot"><![CDATA[D:\EclipseData\Andromeda\treatPM\clientApp\build]]></param>
+      <param name="download"><![CDATA[D:\EclipseData\Andromeda\treatPM\result]]></param>
+    </folder>
+
+    <network>
+      <servicePort>8888</servicePort>
+      <bossThread>1</bossThread>
+      <workerThread>4</workerThread>
+    </network>
+
+    <withConsole>false</withConsole>
+
+    <keepOlds>true</keepOlds>
+
+    <logging>
+      <level>0</level>
+      <useFile>true</useFile>
+    </logging>
+
+  </setting>
+
+</treatPM>
