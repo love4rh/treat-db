@@ -13,16 +13,16 @@ import io.netty.handler.codec.http.HttpVersion;
 
 
 
-public class RequestEx implements HttpRequest
+public class TomyRequestor implements HttpRequest
 {
     private HttpRequest                 _httpRq = null;
     private Map<String, List<String>>   _params = null;
     private ChannelHandlerContext       _ctx = null;
     
     
-    public RequestEx( HttpRequest req
-                    , Map<String, List<String>> params
-                    , ChannelHandlerContext ctx )
+    public TomyRequestor( HttpRequest req
+                        , Map<String, List<String>> params
+                        , ChannelHandlerContext ctx )
     {
         _httpRq = req;
         _params = params;

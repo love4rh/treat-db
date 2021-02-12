@@ -9,16 +9,19 @@ import org.reflections.Reflections;
 
 
 /**
- * HTTP Request Handler 클래스를 생성하기 위한 클래스
+ * TomyServer용 RESTful API 핸들링 클래스를 생성하기 위한 클래스
  * 
  * @author TurboK
  */
-public class RequestHandlerFactory
+public class TomyApiHandlerFactory
 {
     private Map<String, Class<?>>  _classMap = null;
     
     
-    RequestHandlerFactory(String packageName)
+    /**
+     * @param packageName API 핸들러가 정의된 패키지
+     */
+    TomyApiHandlerFactory(String packageName)
     {
         initClasseMap(packageName);
     }
@@ -39,12 +42,12 @@ public class RequestHandlerFactory
         Reflections reflections = new Reflections(packageName);
 
         // TODO 상속을 한 번 더 받아도 되는지 확인해 봐야 함.
-        Set<Class<? extends IRequestHandler>> allClasses
-            = reflections.getSubTypesOf(IRequestHandler.class);
+        Set<Class<? extends IApiHanlder>> allClasses
+            = reflections.getSubTypesOf(IApiHanlder.class);
 
-        for(Class<? extends IRequestHandler> clazz : allClasses)
+        for(Class<? extends IApiHanlder> clazz : allClasses)
         {           
-            RequestDefine annot = clazz.getAnnotation(RequestDefine.class);
+            TomyApi annot = clazz.getAnnotation(TomyApi.class);
             
             if( annot == null )
                 continue;
@@ -59,7 +62,7 @@ public class RequestHandlerFactory
         }
     }
 
-    public IRequestHandler getRquestClazz(String uri) throws Exception
+    public IApiHanlder getRquestClazz(String uri) throws Exception
     {
         Class<?> clazz = _classMap.get(uri);
         
@@ -70,6 +73,6 @@ public class RequestHandlerFactory
             return null;
         }
 
-        return (IRequestHandler) clazz.newInstance();
+        return (IApiHanlder) clazz.newInstance();
     }
 }

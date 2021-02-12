@@ -61,13 +61,13 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
     /**
      * Request Handler를 생성하기 위한 멤버
      */
-    private final RequestHandlerFactory     _requestFac;
+    private final TomyApiHandlerFactory     _requestFac;
     
     /**
      * 생성된 Request Handler 관리 멤버.
      * 이미 생성된 것은 여기 것을 이용하고 없다면 _requestFac을 이용하여 만듦.
      */
-    private Map<String, IRequestHandler>     _reqMap = null;
+    private Map<String, IApiHanlder>     _reqMap = null;
     
     /**
      * 최근 요청된 Request 객체
@@ -79,22 +79,22 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
     private IStaticFileHandler          _vPath = null;
     
     
-    public TomyServerHandler(RequestHandlerFactory reqFac)
+    public TomyServerHandler(TomyApiHandlerFactory reqFac)
     {
         this(reqFac, null);
     }
     
-    public TomyServerHandler(RequestHandlerFactory reqFac, IStaticFileHandler vPathMap)
+    public TomyServerHandler(TomyApiHandlerFactory reqFac, IStaticFileHandler vPathMap)
     {
         _requestFac = reqFac;
-        _reqMap = new ConcurrentSkipListMap<String, IRequestHandler>();
+        _reqMap = new ConcurrentSkipListMap<String, IApiHanlder>();
         
         _vPath = vPathMap;
     }
     
-    private IRequestHandler getHandler(String uri)
+    private IApiHanlder getHandler(String uri)
     {
-        IRequestHandler reqHandle = _reqMap.get(uri);
+        IApiHanlder reqHandle = _reqMap.get(uri);
         if( reqHandle == null )
         {
             try
@@ -111,20 +111,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
 
         return reqHandle;
     }
-    
-    /*
-    @Override
-    public void channelRead0(ChannelHandlerContext ctx, Object msg)
-    {
-        System.out.println("channelRead0");
 
-        final FullHttpResponse response = new NetOnResponse();
-        // new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-
-        response.headers().set("custom-response-header", "Some value");
-        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-    } // */
-    
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx)
     {
@@ -195,12 +182,12 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
                     return;
                 }
                 
-                IRequestHandler reqHandle = getHandler(uriPath);
+                IApiHanlder reqHandle = getHandler(uriPath);
 
                 if( reqHandle != null )
                 {
-                    RequestEx reqEx = new RequestEx(_request, params, ctx);
-                    ResponseEx resEx = new ResponseEx();
+                    TomyRequestor reqEx = new TomyRequestor(_request, params, ctx);
+                    TomyResponse resEx = new TomyResponse();
                     
                     resEx.headers().set(_request.headers());
                     

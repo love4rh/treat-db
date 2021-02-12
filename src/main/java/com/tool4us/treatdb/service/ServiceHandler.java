@@ -5,20 +5,21 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.tool4us.common.Logs;
-import com.tool4us.net.http.RequestEx;
+import com.tool4us.net.http.IApiHanlder;
+import com.tool4us.net.http.TomyRequestor;
 
 import lib.turbok.util.UsefulTool;
 
 
 
-public abstract class ServiceHandler implements com.tool4us.net.http.IRequestHandler
+public abstract class ServiceHandler implements IApiHanlder
 {
     public long tickCount()
     {
         return (new Date()).getTime();
     }
     
-	public void startMessage(boolean printParam, RequestEx request)
+	public void startMessage(boolean printParam, TomyRequestor request)
     {
         StringBuilder sb = new StringBuilder();
         

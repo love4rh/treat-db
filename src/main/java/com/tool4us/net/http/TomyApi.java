@@ -7,13 +7,13 @@ import java.lang.annotation.Target;
 
 
 /**
- * SimpleHttpServer에서 Request를 처리하기 위한 핸들러의 속성을 지정하는 Annotation
+ * TomyServer에서 사용되는 API를 정의하기 위한 Annotation
  * 
  * @author TurboK
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RequestDefine
+public @interface TomyApi
 {
     /**
      * 경로 지정

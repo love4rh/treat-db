@@ -39,7 +39,7 @@ public class TomyServer
     private ServerBootstrap 	_bootstrap = null;
     private ChannelFuture       _bootChannel = null;
     
-    private RequestHandlerFactory	_handlerFactory = null;
+    private TomyApiHandlerFactory	_handlerFactory = null;
     
     /** 로그 남길지 여부. 0: 안 남김, 1: 호출된 함수 목록만 남김, 9: 주고 받은 데이터도 남기기 */
     private int                 _loggingType = 0;
@@ -58,7 +58,7 @@ public class TomyServer
     public TomyServer(String handlerPackage, IStaticFileHandler vRoot)
     {
         // TODO CHECK NetOnSetting 호출 필요?
-        _handlerFactory = new RequestHandlerFactory(handlerPackage);
+        _handlerFactory = new TomyApiHandlerFactory(handlerPackage);
         _vRoot = vRoot;
     }
     
@@ -166,7 +166,7 @@ public class TomyServer
         _bootChannel.channel().closeFuture().sync();
     }
     
-    public RequestHandlerFactory getHandlerFactory()
+    public TomyApiHandlerFactory getHandlerFactory()
     {
         return _handlerFactory;
     }
@@ -180,18 +180,18 @@ public class TomyServer
 class HttpServerInitializer extends ChannelInitializer<SocketChannel>
 {
     private final SslContext                _sslCtx;
-    private final RequestHandlerFactory     _requestFac;
+    private final TomyApiHandlerFactory     _requestFac;
     private IStaticFileHandler      _vRoot;
     
     private int     _loggingType = 0;
 
     
-    public HttpServerInitializer(RequestHandlerFactory reqFac, SslContext sslCtx, int loggingType)
+    public HttpServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType)
     {
         this(reqFac, sslCtx, loggingType, null);
     }
     
-    public HttpServerInitializer(RequestHandlerFactory reqFac, SslContext sslCtx, int loggingType, IStaticFileHandler vRoot)
+    public HttpServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType, IStaticFileHandler vRoot)
     {
         _sslCtx = sslCtx;
         _requestFac = reqFac;

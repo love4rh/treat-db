@@ -11,12 +11,12 @@ import io.netty.util.CharsetUtil;
 
 
 
-public class ResponseEx extends DefaultFullHttpResponse
+public class TomyResponse extends DefaultFullHttpResponse
 {
     private ByteBuf         _content = null;
 
     
-    public ResponseEx()
+    public TomyResponse()
     {
         super(HTTP_1_1, OK);
     }
