@@ -44,7 +44,7 @@ public class TomyServer
     /** 로그 남길지 여부. 0: 안 남김, 1: 호출된 함수 목록만 남김, 9: 주고 받은 데이터도 남기기 */
     private int                 _loggingType = 0;
     
-    private IStaticFileHandler  _vRoot = null;
+    private IStaticFileMap  _vRoot = null;
 
     
     public TomyServer(String handlerPackage)
@@ -55,7 +55,7 @@ public class TomyServer
     /**
      * @param handlerPackage    요청에 대한 핸들러가 모여 있는 패키지 이름
      */
-    public TomyServer(String handlerPackage, IStaticFileHandler vRoot)
+    public TomyServer(String handlerPackage, IStaticFileMap vRoot)
     {
         // TODO CHECK NetOnSetting 호출 필요?
         _handlerFactory = new TomyApiHandlerFactory(handlerPackage);
@@ -181,7 +181,7 @@ class HttpServerInitializer extends ChannelInitializer<SocketChannel>
 {
     private final SslContext                _sslCtx;
     private final TomyApiHandlerFactory     _requestFac;
-    private IStaticFileHandler      _vRoot;
+    private IStaticFileMap      _vRoot;
     
     private int     _loggingType = 0;
 
@@ -191,7 +191,7 @@ class HttpServerInitializer extends ChannelInitializer<SocketChannel>
         this(reqFac, sslCtx, loggingType, null);
     }
     
-    public HttpServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType, IStaticFileHandler vRoot)
+    public HttpServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType, IStaticFileMap vRoot)
     {
         _sslCtx = sslCtx;
         _requestFac = reqFac;

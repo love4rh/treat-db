@@ -11,12 +11,12 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -46,13 +46,16 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import com.tool4us.common.Logs;
+
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
+import static io.netty.handler.codec.http.HttpMethod.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 
 
-public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
+public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpRequest>
 {
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
@@ -61,7 +64,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
     /**
      * Request Handler를 생성하기 위한 멤버
      */
-    private final TomyApiHandlerFactory     _requestFac;
+    private final TomyApiHandlerFactory  _requestFac;
     
     /**
      * 생성된 Request Handler 관리 멤버.
@@ -72,11 +75,9 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
     /**
      * 최근 요청된 Request 객체
      */
-    private HttpRequest     _request = null;
+    private FullHttpRequest             _request = null;
     
-    private HttpPostRequestDecoder      _postDecoder = null;
-    
-    private IStaticFileHandler          _vPath = null;
+    private IStaticFileMap              _vPath = null;
     
     
     public TomyServerHandler(TomyApiHandlerFactory reqFac)
@@ -84,7 +85,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
         this(reqFac, null);
     }
     
-    public TomyServerHandler(TomyApiHandlerFactory reqFac, IStaticFileHandler vPathMap)
+    public TomyServerHandler(TomyApiHandlerFactory reqFac, IStaticFileMap vPathMap)
     {
         _requestFac = reqFac;
         _reqMap = new ConcurrentSkipListMap<String, IApiHanlder>();
@@ -119,118 +120,119 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
     }
     
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg)
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg)
     {
-        if( msg instanceof HttpRequest )
+        this._request = msg;
+        
+        if( !msg.decoderResult().isSuccess() )
         {
-            _request = (HttpRequest) msg;
+            sendError(ctx, BAD_REQUEST);
+            return;
+        }
+        
+        // TODO 다른 메소드 지원 여부 검토
+        if( !GET.equals(msg.method()) && !POST.equals(msg.method()) )
+        {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+            return;
+        }
 
-            if( _request.method() == HttpMethod.POST )
+        final String uri = msg.uri();
+        // final String path = 
+        
+        String uriPath = uri;
+        Map<String, List<String>> params = null;
+
+        if( GET.equals(msg.method()) )
+        {
+            QueryStringDecoder gDecoder = new QueryStringDecoder(uri);
+            params = gDecoder.parameters();
+            uriPath = gDecoder.path();
+        }
+        else if( POST.equals(msg.method()) )
+        {
+            // application/x-www-form-urlencoded
+            // application/json
+            
+            Logs.debug("MimeType: {}", HttpUtil.getMimeType(msg));
+            
+            // msg.content()
+            
+            params = new TreeMap<String, List<String>>();
+            
+            HttpPostRequestDecoder postDecoder = new HttpPostRequestDecoder(msg);
+            
+            List<InterfaceHttpData> paramList = postDecoder.getBodyHttpDatas();
+            for(InterfaceHttpData data : paramList)
             {
-                _postDecoder = new HttpPostRequestDecoder(_request);
+                List<String> paramVal = new ArrayList<String>();
+                try
+                {
+                    paramVal.add( ((Attribute)data).getValue() );
+                }
+                catch( Exception e )
+                {
+                    //
+                }
+
+                params.put(data.getName(), paramVal);
             }
-            else if( _request.method() == HttpMethod.OPTIONS )
+        }
+         
+        // HttpUtil.getMimeType(msg);
+        // Content-Type에 따라서 파싱 방식이 달라져야 하지 않을까?
+        
+        // POST
+        // _postDecoder = new HttpPostRequestDecoder(_request);
+        // _postDecoder.offer(httpContent);
+        
+        IApiHanlder reqHandle = getHandler(uriPath);
+
+        if( reqHandle != null )
+        {
+            TomyRequestor reqEx = new TomyRequestor(_request, params, ctx);
+            TomyResponse resEx = new TomyResponse();
+            
+            resEx.headers().set(_request.headers());
+            
+            try
             {
-                //
+                // resEx.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
+                resEx.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
+                resEx.setResultContent( reqHandle.call(reqEx, resEx) );
+                writeResponse(resEx, ctx);
+            }
+            catch( Exception e )
+            {
+                e.printStackTrace();
+                sendError(ctx, HttpResponseStatus.NOT_FOUND);
+            }
+        }
+        else if( _vPath != null )
+        {
+            if( "/".equals(uriPath) )
+            {
+                uriPath = "/index.html";
+            }
+            
+            File sf = _vPath.getFile(uriPath);
+            
+            if( sf.exists() && !uriPath.endsWith(".map") )
+            {
+                try
+                {
+                    sendFile(_request, ctx, sf);
+                }
+                catch( Exception xe )
+                {
+                    sendError(ctx, HttpResponseStatus.FORBIDDEN);
+                }
             }
             else
-                _postDecoder = null;
+                sendError(ctx, HttpResponseStatus.NOT_FOUND);
         }
-        
-        if( msg instanceof HttpContent )
-        {
-            if( _postDecoder != null )
-                _postDecoder.offer((HttpContent) msg);
-        
-            if( msg instanceof LastHttpContent )
-            {
-                // Parameter Map 생성
-                String uriPath = null;
-                Map<String, List<String>> params = null;
-
-                if( _request.method() == HttpMethod.GET )
-                {
-                    QueryStringDecoder gDecoder = new QueryStringDecoder(_request.uri());
-                    params = gDecoder.parameters();
-                    uriPath = gDecoder.path();
-                }
-                // POST라고 가정
-                else if( _postDecoder != null )
-                {
-                    uriPath = _request.uri();
-                    params = new TreeMap<String, List<String>>();
-                    
-                    List<InterfaceHttpData> paramList = _postDecoder.getBodyHttpDatas();
-                    for(InterfaceHttpData data : paramList)
-                    {
-                        List<String> paramVal = new ArrayList<String>();
-                        try
-                        {
-                            paramVal.add( ((Attribute)data).getValue() );
-                        }
-                        catch( Exception e )
-                        {
-                            //
-                        }
-
-                        params.put(data.getName(), paramVal);
-                    }
-                }
-                else
-                {
-                    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
-                    return;
-                }
-                
-                IApiHanlder reqHandle = getHandler(uriPath);
-
-                if( reqHandle != null )
-                {
-                    TomyRequestor reqEx = new TomyRequestor(_request, params, ctx);
-                    TomyResponse resEx = new TomyResponse();
-                    
-                    resEx.headers().set(_request.headers());
-                    
-                    try
-                    {
-                        // resEx.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
-                        resEx.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
-                        resEx.setResultContent( reqHandle.call(reqEx, resEx) );
-                        writeResponse(resEx, ctx);
-                    }
-                    catch( Exception e )
-                    {
-                        e.printStackTrace();
-                        sendError(ctx, HttpResponseStatus.NOT_FOUND);
-                    }
-                }
-                else if( _vPath != null )
-                {
-                    if( "/".equals(uriPath) )
-                    {
-                        uriPath = "/index.html";
-                    }
-                    
-                    File sf = _vPath.getFile(uriPath);
-                    
-                    if( sf.exists() && !uriPath.endsWith(".map") )
-                    {
-                        try
-                        {
-                            sendFile(_request, ctx, sf);
-                        }
-                        catch( Exception xe )
-                        {
-                            sendError(ctx, HttpResponseStatus.FORBIDDEN);
-                        }
-                    }
-                    else
-                        sendError(ctx, HttpResponseStatus.FORBIDDEN);
-                }
-                else
-                    sendError(ctx, HttpResponseStatus.NOT_FOUND);
-            }
-        }
+        else
+            sendError(ctx, HttpResponseStatus.NOT_FOUND);
     }
 
     private boolean writeResponse(FullHttpResponse response, ChannelHandlerContext ctx)
@@ -307,6 +309,8 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
         String path = file.getPath().toLowerCase();
         String mimeType = "application/octet-stream";
         
+        // TODO more types supported.
+        
         if( path.endsWith(".png") ) {
             mimeType = "image/png";
         } else if( path.endsWith(".ico") ) {
@@ -326,9 +330,59 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<Object>
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeType);
     }
     
-    private static void sendFile(HttpRequest request, ChannelHandlerContext ctx, File file) throws Exception
+    /**
+     * If Keep-Alive is disabled, attaches "Connection: close" header to the response
+     * and closes the connection after the response being sent.
+     */
+    private static void sendAndCleanupConnection(final FullHttpRequest request, ChannelHandlerContext ctx, FullHttpResponse response)
     {
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
+        final boolean keepAlive = HttpUtil.isKeepAlive(request);
+        HttpUtil.setContentLength(response, response.content().readableBytes());
+        if( !keepAlive )
+        {
+            // We're going to close the connection as soon as the response is sent,
+            // so we should also make it clear for the client.
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        } else if (request.protocolVersion().equals(HTTP_1_0)) {
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        }
+
+        ChannelFuture flushPromise = ctx.writeAndFlush(response);
+
+        if (!keepAlive) {
+            // Close the connection as soon as the response is sent.
+            flushPromise.addListener(ChannelFutureListener.CLOSE);
+        }
+    }
+    
+    private static void sendFile(FullHttpRequest request, ChannelHandlerContext ctx, File file) throws Exception
+    {
+        final boolean keepAlive = HttpUtil.isKeepAlive(request);
+        
+        // Cache Validation
+        String ifModifiedSince = request.headers().get(HttpHeaderNames.IF_MODIFIED_SINCE);
+        if( ifModifiedSince != null && !ifModifiedSince.isEmpty() )
+        {
+            SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+            Date ifModifiedSinceDate = dateFormatter.parse(ifModifiedSince);
+
+            // Only compare up to the second because the datetime format we send to the client
+            // does not have milliseconds
+            long ifModifiedSinceDateSeconds = ifModifiedSinceDate.getTime() / 1000;
+            long fileLastModifiedSeconds = file.lastModified() / 1000;
+            if( ifModifiedSinceDateSeconds == fileLastModifiedSeconds )
+            {
+                FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, NOT_MODIFIED, Unpooled.EMPTY_BUFFER);
+
+                dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+
+                Calendar time = new GregorianCalendar();
+                response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
+
+                sendAndCleanupConnection(request, ctx, response);
+                return;
+            }
+        }
 
         RandomAccessFile raf;
         

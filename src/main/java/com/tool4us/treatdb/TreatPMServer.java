@@ -5,7 +5,7 @@ import static com.tool4us.treatdb.AppSetting.OPT;
 import java.io.File;
 
 import com.tool4us.common.Logs;
-import com.tool4us.net.http.IStaticFileHandler;
+import com.tool4us.net.http.IStaticFileMap;
 import com.tool4us.net.http.TomyServer;
 
 import lib.turbok.task.TaskQueue;
@@ -24,7 +24,7 @@ public class TreatPMServer
     private TaskQueue       _taskQueue = null;
     
     
-    private static class StaticFileMap implements IStaticFileHandler
+    private static class StaticFileMap implements IStaticFileMap
     {
         @Override
         public File getFile(String uriPath)
