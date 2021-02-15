@@ -35,7 +35,7 @@ public abstract class ServiceHandler implements IApiHanlder
         else
             sb.append(uri.substring(0, pos));
 
-        if( printParam )
+        if( printParam && request.parameterMap() != null )
         {
             sb.append(" | ");
             for(Entry<String, List<String> > param : request.parameterMap().entrySet())

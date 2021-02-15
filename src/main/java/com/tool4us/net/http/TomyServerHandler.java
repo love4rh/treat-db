@@ -14,10 +14,8 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpChunkedInput;
-import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
@@ -33,6 +31,7 @@ import io.netty.util.CharsetUtil;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -46,12 +45,16 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.json.JSONObject;
+
 import com.tool4us.common.Logs;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
 import static io.netty.handler.codec.http.HttpMethod.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
+
+import static com.tool4us.common.Util.UT;
 
 
 
@@ -64,13 +67,13 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     /**
      * Request Handler를 생성하기 위한 멤버
      */
-    private final TomyApiHandlerFactory  _requestFac;
+    private final TomyApiHandlerFactory _requestFac;
     
     /**
      * 생성된 Request Handler 관리 멤버.
      * 이미 생성된 것은 여기 것을 이용하고 없다면 _requestFac을 이용하여 만듦.
      */
-    private Map<String, IApiHanlder>     _reqMap = null;
+    private Map<String, IApiHanlder>    _reqMap = null;
     
     /**
      * 최근 요청된 Request 객체
@@ -141,83 +144,109 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         // final String path = 
         
         String uriPath = uri;
-        Map<String, List<String>> params = null;
+        TomyRequestor reqEx = null;
 
         if( GET.equals(msg.method()) )
         {
             QueryStringDecoder gDecoder = new QueryStringDecoder(uri);
-            params = gDecoder.parameters();
+
             uriPath = gDecoder.path();
+            reqEx = new TomyRequestor(_request, ctx, uriPath, gDecoder.parameters()); 
         }
         else if( POST.equals(msg.method()) )
         {
-            // application/x-www-form-urlencoded
-            // application/json
+            String contentType = null;
             
-            Logs.debug("MimeType: {}", HttpUtil.getMimeType(msg));
-            
-            // msg.content()
-            
-            params = new TreeMap<String, List<String>>();
-            
-            HttpPostRequestDecoder postDecoder = new HttpPostRequestDecoder(msg);
-            
-            List<InterfaceHttpData> paramList = postDecoder.getBodyHttpDatas();
-            for(InterfaceHttpData data : paramList)
+            if( msg.headers().contains(HttpHeaderNames.CONTENT_TYPE) )
             {
-                List<String> paramVal = new ArrayList<String>();
-                try
-                {
-                    paramVal.add( ((Attribute)data).getValue() );
-                }
-                catch( Exception e )
-                {
-                    //
-                }
+                contentType = HttpUtil.getMimeType(msg).toString();
+            }
 
-                params.put(data.getName(), paramVal);
+            Logs.debug("MimeType: {}", contentType);
+            
+            if( "application/x-www-form-urlencoded".equals(contentType) )
+            {
+                Map<String, List<String>> params = new TreeMap<String, List<String>>();
+                
+                HttpPostRequestDecoder postDecoder = new HttpPostRequestDecoder(msg);
+                List<InterfaceHttpData> paramList = postDecoder.getBodyHttpDatas();
+
+                for(InterfaceHttpData data : paramList)
+                {
+                    List<String> paramVal = new ArrayList<String>();
+                    try
+                    {
+                        paramVal.add( ((Attribute)data).getValue() );
+                    }
+                    catch( Exception xe )
+                    {
+                        //
+                    }
+    
+                    params.put(data.getName(), paramVal);
+                }
+                
+                reqEx = new TomyRequestor(_request, ctx, uriPath, params);
+            }
+            else if( "application/json".equals(contentType) )
+            {
+                String bodyData = msg.content().toString(Charset.forName("UTF-8"));
+                JSONObject jsonData = UT.parseJSON(bodyData);
+                
+                if( jsonData == null )
+                {
+                    sendError(ctx, HttpResponseStatus.FORBIDDEN);
+                    return;
+                }
+                else
+                    reqEx = new TomyRequestor(_request, ctx, uriPath, bodyData, jsonData);
+            }
+            else if( "text/plain".equals(contentType) )
+            {
+                String bodyData = msg.content().toString(Charset.forName("UTF-8"));
+                reqEx = new TomyRequestor(_request, ctx, uriPath, bodyData);
+            }
+            else
+            {
+                sendError(ctx, HttpResponseStatus.FORBIDDEN);
+                return;
             }
         }
-         
-        // HttpUtil.getMimeType(msg);
-        // Content-Type에 따라서 파싱 방식이 달라져야 하지 않을까?
-        
-        // POST
-        // _postDecoder = new HttpPostRequestDecoder(_request);
-        // _postDecoder.offer(httpContent);
-        
+
         IApiHanlder reqHandle = getHandler(uriPath);
 
         if( reqHandle != null )
         {
-            TomyRequestor reqEx = new TomyRequestor(_request, params, ctx);
             TomyResponse resEx = new TomyResponse();
-            
+
             resEx.headers().set(_request.headers());
             
             try
             {
+                // TODO Common Filter
+                
                 // resEx.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
                 resEx.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
                 resEx.setResultContent( reqHandle.call(reqEx, resEx) );
-                writeResponse(resEx, ctx);
+
+                sendResponse(resEx, ctx);
             }
-            catch( Exception e )
+            catch( Exception xe )
             {
-                e.printStackTrace();
-                sendError(ctx, HttpResponseStatus.NOT_FOUND);
+                Logs.trace(xe);
+                sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
             }
         }
         else if( _vPath != null )
         {
             if( "/".equals(uriPath) )
             {
-                uriPath = "/index.html";
+                uriPath += _vPath.getRootFile();
             }
             
             File sf = _vPath.getFile(uriPath);
             
-            if( sf.exists() && !uriPath.endsWith(".map") )
+            if( sf != null && sf.exists() && _vPath.isAllowed(uriPath) )
             {
                 try
                 {
@@ -225,17 +254,17 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 }
                 catch( Exception xe )
                 {
-                    sendError(ctx, HttpResponseStatus.FORBIDDEN);
+                    sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             else
-                sendError(ctx, HttpResponseStatus.NOT_FOUND);
+                sendError(ctx, HttpResponseStatus.FORBIDDEN);
         }
         else
             sendError(ctx, HttpResponseStatus.NOT_FOUND);
     }
 
-    private boolean writeResponse(FullHttpResponse response, ChannelHandlerContext ctx)
+    private void sendResponse(FullHttpResponse response, ChannelHandlerContext ctx)
     {
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(_request);
@@ -267,15 +296,16 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
         // Write the response.
         ctx.write(response);
-        
-        return keepAlive;
     }
 
     private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
     {
         FullHttpResponse response = new DefaultFullHttpResponse(
-                HTTP_1_1, status, Unpooled.copiedBuffer("Failure: " + status + "\r\n", CharsetUtil.UTF_8));
+            HTTP_1_1, status, Unpooled.copiedBuffer("Failure: " + status + "\r\n", CharsetUtil.UTF_8)
+        );
+
         response.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
+
         // Close the connection as soon as the error message is sent.
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
@@ -298,34 +328,16 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     /**
      * Sets the content type header for the HTTP Response
-     *
-     * @param response
-     *            HTTP response
-     * @param file
-     *            file to extract content type
+     * @see https://developer.mozilla.org/ko/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+     * @param response  HTTP response
+     * @param file      file to extract content type
      */
     private static void setContentTypeHeader(HttpResponse response, File file)
     {
         String path = file.getPath().toLowerCase();
-        String mimeType = "application/octet-stream";
+        String mimeType = UT.getMimeType( UT.getExtension(path) );
         
-        // TODO more types supported.
-        
-        if( path.endsWith(".png") ) {
-            mimeType = "image/png";
-        } else if( path.endsWith(".ico") ) {
-            mimeType = "image/ico";
-        } else if( path.endsWith(".html") || path.endsWith(".htm") ) {
-            mimeType = "text/html"; // ";charset=UTF-8"
-        } else if( path.endsWith(".js") ) {
-            mimeType = "text/javascript"; // ";charset=UTF-8"
-        } else if( path.endsWith(".css") ) {
-            mimeType = "text/css"; // ";charset=UTF-8"
-        } else if( path.endsWith(".txt") ) {
-            mimeType = "text/plain"; // ";charset=UTF-8"
-        } else if( path.endsWith(".mp4") ) {
-            mimeType = "video/mp4"; // ";charset=UTF-8"
-        }
+        // TODO ";charset=UTF-8" ??
 
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeType);
     }
@@ -401,6 +413,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
 
         HttpUtil.setContentLength(response, fileLength);
+
         setContentTypeHeader(response, file);
         setDateAndCacheHeaders(response, file);
 

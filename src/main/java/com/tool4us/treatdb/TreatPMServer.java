@@ -27,6 +27,19 @@ public class TreatPMServer
     private static class StaticFileMap implements IStaticFileMap
     {
         @Override
+        public String getRootFile()
+        {
+            return "index.html";
+        }
+        
+        @Override
+        public boolean isAllowed(String uriPath)
+        {
+            // 소스 보안을 위하여 *.map 파일은 반환하지 않음.
+            return !uriPath.endsWith(".map");
+        }
+
+        @Override
         public File getFile(String uriPath)
         {
             String vDir = null;
@@ -46,7 +59,6 @@ public class TreatPMServer
             
             return new File(vDir + uriPath);
         }
-        
     }
       
     public TreatPMServer()

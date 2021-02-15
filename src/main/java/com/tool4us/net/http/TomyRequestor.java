@@ -3,6 +3,8 @@ package com.tool4us.net.http;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONObject;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderResult;
@@ -19,16 +21,45 @@ public class TomyRequestor implements HttpRequest
     private Map<String, List<String>>   _params = null;
     private ChannelHandlerContext       _ctx = null;
     
+    private String      _uriAdj = null;
+    private String      _bodyData = null;
+    private JSONObject  _jsonData = null;
     
     public TomyRequestor( HttpRequest req
-                        , Map<String, List<String>> params
-                        , ChannelHandlerContext ctx )
+                        , ChannelHandlerContext ctx
+                        , String uriPath
+                        , Map<String, List<String>> params )
     {
         _httpRq = req;
         _params = params;
         _ctx = ctx;
+        _uriAdj = uriPath;
     }
     
+    public TomyRequestor( HttpRequest req
+                        , ChannelHandlerContext ctx
+                        , String uriPath
+                        , String bodyData
+                        , JSONObject jsonData )
+    {
+        _httpRq = req;
+        _ctx = ctx;
+        _uriAdj = uriPath;
+        _bodyData = bodyData;
+        _jsonData = jsonData;
+    }
+
+    public TomyRequestor( HttpRequest req
+                        , ChannelHandlerContext ctx
+                        , String uriPath
+                        , String bodyData )
+    {
+        _httpRq = req;
+        _ctx = ctx;
+        _uriAdj = uriPath;
+        _bodyData = bodyData;
+    }
+
     public Channel channel()
     {
         return _ctx.channel();
@@ -52,6 +83,16 @@ public class TomyRequestor implements HttpRequest
     {
         List<String> h = this.getHeaderValues(name);
         return h == null || h.isEmpty() ? null : h.get(0);
+    }
+    
+    public String getBodyData()
+    {
+        return _bodyData;
+    }
+    
+    public JSONObject getJsonData()
+    {
+        return _jsonData;
     }
 
     @Override
@@ -81,7 +122,7 @@ public class TomyRequestor implements HttpRequest
     @Override
     public HttpMethod getMethod()
     {
-        return _httpRq.method();
+        return this.method();
     }
 
     @Override
@@ -93,7 +134,7 @@ public class TomyRequestor implements HttpRequest
     @Override
     public String getUri()
     {
-        return _httpRq.uri();
+        return this.uri();
     }
 
     @Override
@@ -115,6 +156,9 @@ public class TomyRequestor implements HttpRequest
     
     public String parameter(String paramName)
     {
+        if( _params == null )
+            return null;
+
         List<String> pList = _params.get(paramName);
         
         return pList == null ? null : pList.get(0);
@@ -146,6 +190,6 @@ public class TomyRequestor implements HttpRequest
     @Override
     public String uri()
     {
-        return _httpRq.uri();
+        return _uriAdj != null ? _uriAdj : _httpRq.uri();
     }
 }
