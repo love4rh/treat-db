@@ -30,6 +30,7 @@ public enum Util
         _mimeTypeMap.put(".jad",     "text/vnd.sun.j2me.app-descriptor");
         _mimeTypeMap.put(".wml",     "text/vnd.wap.wml");
         _mimeTypeMap.put(".htc",     "text/x-component");
+        
         _mimeTypeMap.put(".gif",     "image/gif");
         _mimeTypeMap.put(".jpeg",    "image/jpeg");
         _mimeTypeMap.put(".jpg",     "image/jpeg");
@@ -43,6 +44,7 @@ public enum Util
         _mimeTypeMap.put(".svg",     "image/svg+xml");
         _mimeTypeMap.put(".svgz",    "image/svg+xml");
         _mimeTypeMap.put(".webp",    "image/webp");
+        
         _mimeTypeMap.put(".js",      "application/x-javascript");
         _mimeTypeMap.put(".atom",    "application/atom+xml");
         _mimeTypeMap.put(".rss",     "application/rss+xml");
@@ -83,6 +85,7 @@ public enum Util
         _mimeTypeMap.put(".xpi",     "application/x-xpinstall");
         _mimeTypeMap.put(".xhtml",   "application/xhtml+xml");
         _mimeTypeMap.put(".zip",     "application/zip");
+        
         _mimeTypeMap.put(".mid",     "audio/midi");
         _mimeTypeMap.put(".midi",    "audio/midi");
         _mimeTypeMap.put(".kar",     "audio/midi");
@@ -90,6 +93,7 @@ public enum Util
         _mimeTypeMap.put(".ogg",     "audio/ogg");
         _mimeTypeMap.put(".m4a",     "audio/x-m4a");
         _mimeTypeMap.put(".ra",      "audio/x-realaudio");
+        
         _mimeTypeMap.put(".3gpp",    "video/3gpp");
         _mimeTypeMap.put(".3gp",     "video/3gpp");
         _mimeTypeMap.put(".mp4",     "video/mp4");
