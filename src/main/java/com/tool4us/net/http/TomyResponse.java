@@ -3,11 +3,15 @@ package com.tool4us.net.http;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
+import java.nio.charset.Charset;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.util.CharsetUtil;
+
+import static com.tool4us.common.Util.UT;
 
 
 
@@ -62,5 +66,13 @@ public class TomyResponse extends DefaultFullHttpResponse
     public boolean release(int decrement)
     {
         return _content.release(decrement);
+    }
+
+    public String oneLineResponse(int limit)
+    {
+        if( _content == null )
+            return "";
+        
+        return UT.makeEllipsis( UT.makeSingleLine(_content.toString(Charset.forName("UTF-8"))), limit );
     }
 }

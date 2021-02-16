@@ -2,6 +2,7 @@ package com.tool4us.net.http;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.json.JSONObject;
 
@@ -12,6 +13,8 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
+
+import static com.tool4us.common.Util.UT;
 
 
 
@@ -24,7 +27,8 @@ public class TomyRequestor implements HttpRequest
     private String      _uriAdj = null;
     private String      _bodyData = null;
     private JSONObject  _jsonData = null;
-    
+
+
     public TomyRequestor( HttpRequest req
                         , ChannelHandlerContext ctx
                         , String uriPath
@@ -191,5 +195,40 @@ public class TomyRequestor implements HttpRequest
     public String uri()
     {
         return _uriAdj != null ? _uriAdj : _httpRq.uri();
+    }
+
+    public String oneLineHeader(int limit)
+    {
+        StringBuilder sb = new StringBuilder();
+        
+        for(Entry<String, String> elem : _httpRq.headers().entries())
+        {
+            sb.append(elem.getKey()).append(":").append(UT.makeEllipsis(elem.getValue(), limit)).append("|");
+        }
+
+        return sb.toString();
+    }
+    
+    public String oneLineParameter(int limit)
+    {
+        if( _params == null || _params.isEmpty() )
+        {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        
+        for(Entry<String, List<String>> elem : _params.entrySet())
+        {
+            List<String> valueList = elem.getValue();
+            sb.append(elem.getKey()).append(":").append(valueList.isEmpty() ? "" : UT.makeEllipsis(valueList.get(0), limit)).append("|");
+        }
+
+        return sb.toString();
+    }
+    
+    public String oneLineBody(int limit)
+    {
+        return UT.isValidString(_bodyData) ? UT.makeEllipsis(UT.makeSingleLine(_bodyData), limit) : "";
     }
 }

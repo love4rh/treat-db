@@ -42,10 +42,10 @@ public class TomyApiHandlerFactory
         Reflections reflections = new Reflections(packageName);
 
         // TODO 상속을 한 번 더 받아도 되는지 확인해 봐야 함.
-        Set<Class<? extends IApiHanlder>> allClasses
-            = reflections.getSubTypesOf(IApiHanlder.class);
+        Set<Class<? extends ApiHandler>> allClasses
+            = reflections.getSubTypesOf(ApiHandler.class);
 
-        for(Class<? extends IApiHanlder> clazz : allClasses)
+        for(Class<? extends ApiHandler> clazz : allClasses)
         {           
             TomyApi annot = clazz.getAnnotation(TomyApi.class);
             
@@ -62,7 +62,7 @@ public class TomyApiHandlerFactory
         }
     }
 
-    public IApiHanlder getRquestClazz(String uri) throws Exception
+    public ApiHandler getRquestClazz(String uri) throws Exception
     {
         Class<?> clazz = _classMap.get(uri);
         
@@ -73,6 +73,6 @@ public class TomyApiHandlerFactory
             return null;
         }
 
-        return (IApiHanlder) clazz.newInstance();
+        return (ApiHandler) clazz.newInstance();
     }
 }

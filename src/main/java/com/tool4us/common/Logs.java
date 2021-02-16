@@ -23,7 +23,7 @@ import org.apache.log4j.PropertyConfigurator;
  */
 public class Logs extends ILogging
 {
-    private static final String _defaultPattern_ = "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5p][%-16t][%m]%n";
+    private static final String _defaultPattern_ = "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5p][%-16t] %m%n";
     
     // TODO: 코드 안정화가 된 이후에는 false로 세팅하여 성능 최적화 되도록 해야함.
 	public static final boolean _isDebug = true;

@@ -108,9 +108,13 @@ public enum Util
         _mimeTypeMap.put(".asf",     "video/x-ms-asf");
         _mimeTypeMap.put(".wmv",     "video/x-ms-wmv");
         _mimeTypeMap.put(".avi",     "video/x-msvideo");
-
     }
     
+    public long tickCount()
+    {
+        return System.currentTimeMillis();
+    }
+
     /**
      * JSON 문자열을 받아 파싱하여 JSONObject로 반환. Exception 등이 발생하면 null.
      * 코드 상에서 try ~ catch 하기 애매한 경우 사용.
@@ -176,5 +180,15 @@ public enum Util
             return "";
 
         return text.replace("\r\n", "").replace("\r", "").replace("\n", "");
+    }
+    
+    public boolean isValidString(String text)
+    {
+        return text != null && !text.isEmpty();
+    }
+    
+    public String makeEllipsis(String text, int limit)
+    {
+        return text.length() <= limit ? text : text.substring(0, limit - 3) + "...";
     }
 }
