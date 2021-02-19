@@ -26,40 +26,24 @@ public class TomyRequestor implements HttpRequest
     
     private String      _uriAdj = null;
     private String      _bodyData = null;
+    
     private JSONObject  _jsonData = null;
 
-
-    public TomyRequestor( HttpRequest req
-                        , ChannelHandlerContext ctx
-                        , String uriPath
-                        , Map<String, List<String>> params )
-    {
+    
+    public TomyRequestor( HttpRequest req, ChannelHandlerContext ctx )
+    {                    
         _httpRq = req;
-        _params = params;
         _ctx = ctx;
-        _uriAdj = uriPath;
     }
     
-    public TomyRequestor( HttpRequest req
-                        , ChannelHandlerContext ctx
-                        , String uriPath
-                        , String bodyData
-                        , JSONObject jsonData )
+    public void initialize(String uriPath, Map<String, List<String>> params)
     {
-        _httpRq = req;
-        _ctx = ctx;
+        _params = params;
         _uriAdj = uriPath;
-        _bodyData = bodyData;
-        _jsonData = jsonData;
     }
 
-    public TomyRequestor( HttpRequest req
-                        , ChannelHandlerContext ctx
-                        , String uriPath
-                        , String bodyData )
+    public void initialize(String uriPath, String bodyData)
     {
-        _httpRq = req;
-        _ctx = ctx;
         _uriAdj = uriPath;
         _bodyData = bodyData;
     }
@@ -94,8 +78,11 @@ public class TomyRequestor implements HttpRequest
         return _bodyData;
     }
     
-    public JSONObject getJsonData()
+    public JSONObject getDataAsJson()
     {
+        if( _jsonData == null )
+            _jsonData = UT.parseJSON(_bodyData);
+
         return _jsonData;
     }
 
@@ -203,7 +190,7 @@ public class TomyRequestor implements HttpRequest
         
         for(Entry<String, String> elem : _httpRq.headers().entries())
         {
-            sb.append(elem.getKey()).append(":").append(UT.makeEllipsis(elem.getValue(), limit)).append("|");
+            sb.append(elem.getKey()).append("=").append(UT.makeEllipsis(elem.getValue(), limit)).append(";");
         }
 
         return sb.toString();
@@ -221,7 +208,7 @@ public class TomyRequestor implements HttpRequest
         for(Entry<String, List<String>> elem : _params.entrySet())
         {
             List<String> valueList = elem.getValue();
-            sb.append(elem.getKey()).append(":").append(valueList.isEmpty() ? "" : UT.makeEllipsis(valueList.get(0), limit)).append("|");
+            sb.append(elem.getKey()).append("=").append(valueList.isEmpty() ? "" : UT.makeEllipsis(valueList.get(0), limit)).append(";");
         }
 
         return sb.toString();

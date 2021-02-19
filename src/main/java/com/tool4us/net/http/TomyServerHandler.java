@@ -45,8 +45,6 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import org.json.JSONObject;
-
 import com.tool4us.common.Logs;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
@@ -82,6 +80,12 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     
     private IStaticFileMap              _vPath = null;
     
+    /**
+     * 상세로깅 여부. 이 값이 true라면, 헤더, 파라미터, 바디 및 반환 결과 등을 모두 남김.
+     * false이면 기본 호출 이력만 남김.
+     */
+    private boolean                     _detailLogging = true;
+    
     
     public TomyServerHandler(TomyApiHandlerFactory reqFac)
     {
@@ -115,11 +119,24 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
         return reqHandle;
     }
+    
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception
+    {
+        super.channelActive(ctx);
+    }
+    
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception
+    {
+        super.channelInactive(ctx);
+    }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx)
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception
     {
-        ctx.flush();
+        super.channelReadComplete(ctx);
+        // ctx.flush();
     }
     
     @Override
@@ -142,28 +159,28 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             return;
         }
 
-        final String uri = msg.uri();
-        String uriPath = uri;
-        
-        TomyRequestor reqEx = null;
+        String uriPath = msg.uri();
+        String traceID = UT.makeRandomeString(12); // Request와 Response pair 구분을 위한 ID.
+        TomyRequestor reqEx = new TomyRequestor(_request, ctx);
 
         if( GET.equals(msg.method()) )
         {
-            QueryStringDecoder gDecoder = new QueryStringDecoder(uri);
-
+            QueryStringDecoder gDecoder = new QueryStringDecoder(uriPath);
             uriPath = gDecoder.path();
-            reqEx = new TomyRequestor(_request, ctx, uriPath, gDecoder.parameters()); 
+            
+            Logs.info("[REQ:{}] [GET] [IP:{}] [URI:{}]", traceID, reqEx.getRemoteDescription(), uriPath);
+
+            reqEx.initialize(uriPath, gDecoder.parameters()); 
         }
         else if( POST.equals(msg.method()) )
         {
-            String contentType = null;
+            Logs.info("[REQ:{}] [POST] [IP:{}] [URI:{}]", traceID, reqEx.getRemoteDescription(), uriPath);
             
+            String contentType = null;
             if( msg.headers().contains(HttpHeaderNames.CONTENT_TYPE) )
             {
                 contentType = HttpUtil.getMimeType(msg).toString();
             }
-
-            Logs.debug("MimeType: {}", contentType);
             
             if( "application/x-www-form-urlencoded".equals(contentType) )
             {
@@ -187,40 +204,24 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     params.put(data.getName(), paramVal);
                 }
                 
-                reqEx = new TomyRequestor(_request, ctx, uriPath, params);
-            }
-            else if( "application/json".equals(contentType) )
-            {
-                String bodyData = msg.content().toString(Charset.forName("UTF-8"));
-                JSONObject jsonData = UT.parseJSON(bodyData);
-                
-                if( jsonData == null )
-                {
-                    sendError(ctx, HttpResponseStatus.FORBIDDEN);
-                    return;
-                }
-                else
-                    reqEx = new TomyRequestor(_request, ctx, uriPath, bodyData, jsonData);
-            }
-            else if( "text/plain".equals(contentType) )
-            {
-                String bodyData = msg.content().toString(Charset.forName("UTF-8"));
-                reqEx = new TomyRequestor(_request, ctx, uriPath, bodyData);
+                reqEx.initialize(uriPath, params);
             }
             else
             {
-                sendError(ctx, HttpResponseStatus.FORBIDDEN);
-                return;
+                String bodyData = msg.content().toString(Charset.forName("UTF-8"));
+                reqEx.initialize(uriPath, bodyData);
             }
         }
         
-        // TODO 로깅을 남길지 말지 옵션 처리
-        final int lenLimit = 128;
-        if( reqEx != null )
+        final int lenLimit = 96;
+        if( _detailLogging )
         {
-            Logs.info("$REQ$ IP:[{}], URI:[{}], HEADER:[{}], PARAM:[{}], BODY:[{}]"
-                , reqEx.getRemoteDescription(), reqEx.uri()
-                , reqEx.oneLineHeader(lenLimit), reqEx.oneLineParameter(lenLimit)
+            Logs.info("[DTL:{}] [IP:{}] [URI:{}] [HAEDER:{}] [PARAM:{}] [BODY:{}]"
+                , traceID
+                , reqEx.getRemoteDescription()
+                , reqEx.uri()
+                , reqEx.oneLineHeader(lenLimit)
+                , reqEx.oneLineParameter(lenLimit)
                 , reqEx.oneLineBody(1024)
             );
         }
@@ -232,7 +233,6 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         if( reqHandle != null )
         {
             resEx = new TomyResponse();
-
             resEx.headers().set(_request.headers());
             
             try
@@ -243,7 +243,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 resEx.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
                 resEx.setResultContent( reqHandle.call(reqEx, resEx) );
 
-                sendResponse(resEx, ctx);
+                sendResponse(ctx, resEx);
             }
             catch( Exception xe )
             {
@@ -277,34 +277,33 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         else
             retStatus = HttpResponseStatus.NOT_FOUND;
         
-        
-        // TODO 로깅을 남길지 말지 옵션 처리
+
+        String retContent = "";
         if( retStatus != HttpResponseStatus.OK )
         {
             sendError(ctx, retStatus);
-
-            Logs.info("$RES$ IP:[{}], URI:[{}], PROCTIME:[{}], STATUS:[{}]"
-                , reqEx.getRemoteDescription(), reqEx.uri(), UT.tickCount() - sTick
-                , retStatus.code()
-            );
         }
         else if( resEx != null )
         {
-            Logs.info("$RES$ IP:[{}], URI:[{}], PROCTIME:[{}], STATUS:[{}], CONTENT:[{}]"
-                , reqEx.getRemoteDescription(), reqEx.uri(), UT.tickCount() - sTick
-                , resEx.status().code(), resEx.oneLineResponse(1024)
+            retStatus = resEx.status();
+            retContent = resEx.oneLineResponse(1024);
+        }
+        
+        if( _detailLogging )
+        {
+            Logs.info("[RES:{}] [PTIME:{}] [STATUS:{}] [CONTENT:{}]"
+                , traceID, UT.tickCount() - sTick, retStatus.code(), retContent
             );
         }
         else
         {
-            Logs.info("$RES$ IP:[{}], URI:[{}], PROCTIME:[{}], STATUS:[{}]"
-                , reqEx.getRemoteDescription(), reqEx.uri(), UT.tickCount() - sTick
-                , retStatus.code()
+            Logs.info("[RES:{}] PTIME:[{}], STATUS:[{}]"
+                , traceID, UT.tickCount() - sTick, retStatus.code()
             );
         }
     }
 
-    private void sendResponse(FullHttpResponse response, ChannelHandlerContext ctx)
+    private void sendResponse(ChannelHandlerContext ctx, TomyResponse response)
     {
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(_request);

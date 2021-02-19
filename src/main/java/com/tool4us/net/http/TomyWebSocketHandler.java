@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.netty.example.http.websocketx.server;
+package com.tool4us.net.http;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -25,10 +25,12 @@ import java.util.Locale;
 /**
  * Echoes uppercase content of text frames.
  */
-public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+public class TomyWebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame>
+{
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception
+    {
         // ping and pong frames already handled
         System.out.println("Packet received by WS");
 
