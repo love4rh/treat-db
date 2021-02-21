@@ -3,21 +3,20 @@ package com.tool4us.net.http;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
-import java.nio.charset.Charset;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.util.CharsetUtil;
 
 import static com.tool4us.common.Util.UT;
+import static io.netty.buffer.Unpooled.*;
 
 
 
 public class TomyResponse extends DefaultFullHttpResponse
 {
     private ByteBuf         _content = null;
+    private String          _retContent = "";
 
     
     public TomyResponse()
@@ -27,7 +26,8 @@ public class TomyResponse extends DefaultFullHttpResponse
     
     public void setResultContent(String resultStr)
     {
-        _content = Unpooled.copiedBuffer(resultStr, CharsetUtil.UTF_8);
+        _retContent = resultStr;
+        _content = copiedBuffer(resultStr, CharsetUtil.UTF_8);
     }
     
     @Override
@@ -70,9 +70,6 @@ public class TomyResponse extends DefaultFullHttpResponse
 
     public String oneLineResponse(int limit)
     {
-        if( _content == null )
-            return "";
-        
-        return UT.makeEllipsis( UT.makeSingleLine(_content.toString(Charset.forName("UTF-8"))), limit );
+        return UT.makeEllipsis( UT.makeSingleLine(_retContent), limit );
     }
 }

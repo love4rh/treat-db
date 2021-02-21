@@ -19,8 +19,12 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpContentCompressor;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.codec.http.cors.CorsConfig;
+import io.netty.handler.codec.http.cors.CorsConfigBuilder;
+import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.ssl.SslContext;
 
 public class HttpUploadServerInitializer extends ChannelInitializer<SocketChannel> {
@@ -38,10 +42,19 @@ public class HttpUploadServerInitializer extends ChannelInitializer<SocketChanne
         if (sslCtx != null) {
             pipeline.addLast(sslCtx.newHandler(ch.alloc()));
         }
+        
+        CorsConfig corsConfig = CorsConfigBuilder
+            .forAnyOrigin()
+            .allowNullOrigin()
+            .allowCredentials()
+            .allowedRequestMethods(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS)
+            //.allowedRequestHeaders("x-auth-code", "Content-Type")
+            //.preflightResponseHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Origin")
+            .build();
 
         pipeline.addLast(new HttpRequestDecoder());
         pipeline.addLast(new HttpResponseEncoder());
-
+        pipeline.addLast(new CorsHandler(corsConfig));
         // Remove the following line if you don't want automatic content compression.
         pipeline.addLast(new HttpContentCompressor());
 

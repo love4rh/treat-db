@@ -1,16 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="kr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Upload Files</title>
+
+</head>
+
 <body>
+    <form method="post" enctype="multipart/form-data" action="http://localhost:8080/test">
+        <input type="text" name="name">
+        <br />
+        <input type="file" name="files_upload">
+        <br />
+        <input type="submit" value="Upload File" name="submit">
+    </form>
 
-<h2>File Upload Test</h2>
+    <div id="result">
+    </div>
 
-<form action="http://localhost:8888/form" method="post">
-  <div><input id="desc" type="text" /></div>
-
-  <div><input id="image" type="file" /></div>
-
-  <div><input type="submit" value="Submit"></div>
-</form> 
-
+	<!-- <script src="upload.js"></script> -->
 </body>
+
 </html>

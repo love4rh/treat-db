@@ -54,7 +54,7 @@ import java.util.Map.Entry;
 public final class HttpUploadClient {
 
     static final String BASE_URL = System.getProperty("baseUrl", "http://127.0.0.1:8080/");
-    static final String FILE = System.getProperty("file", "upload.txt");
+    static final String FILE = System.getProperty("file", "/Users/TurboK/Pictures/PP-MH.png");
 
     public static void main(String[] args) throws Exception {
         String postSimple, postFile, get;

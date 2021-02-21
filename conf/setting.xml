@@ -14,7 +14,7 @@
     </folder>
 
     <network>
-      <servicePort>8888</servicePort>
+      <servicePort>8080</servicePort>
       <bossThread>1</bossThread>
       <workerThread>4</workerThread>
     </network>

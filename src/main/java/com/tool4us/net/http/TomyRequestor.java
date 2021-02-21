@@ -1,18 +1,23 @@
 package com.tool4us.net.http;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.json.JSONObject;
+import java.util.TreeMap;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderResult;
+
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.multipart.FileUpload;
 
 import static com.tool4us.common.Util.UT;
 
@@ -21,36 +26,88 @@ import static com.tool4us.common.Util.UT;
 public class TomyRequestor implements HttpRequest
 {
     private HttpRequest                 _httpRq = null;
-    private Map<String, List<String>>   _params = null;
     private ChannelHandlerContext       _ctx = null;
-    
+
+    private Map<String, List<String>>   _params = null;
+    private Map<String, FileUpload>     _files = null;
+
+    private long        _sTick = 0;
+    private String      _traceID = null;
+
     private String      _uriAdj = null;
-    private String      _bodyData = null;
-    
-    private JSONObject  _jsonData = null;
+    private String      _bodyData = "";
+    private String      _mimeType = null;
 
     
-    public TomyRequestor( HttpRequest req, ChannelHandlerContext ctx )
-    {                    
-        _httpRq = req;
+    public TomyRequestor(HttpRequest req, ChannelHandlerContext ctx)
+    {
         _ctx = ctx;
+        _httpRq = req;
+
+        _sTick = UT.tickCount();
+        _traceID = UT.makeRandomeString(12);
     }
     
     public void initialize(String uriPath, Map<String, List<String>> params)
     {
-        _params = params;
         _uriAdj = uriPath;
+
+        if( params != null && !params.isEmpty() )
+        {
+            _params = params;
+        }
+    }
+    
+    public void putParameter(String key, String value)
+    {
+        if( _params == null )
+        {
+            _params = new TreeMap<String, List<String>>();
+        }
+        
+        List<String> valList = _params.get(key);
+        if( valList == null )
+        {
+            valList = new ArrayList<String>();
+            _params.put(key, valList);
+        }
+
+        valList.add(value);
+    }
+    
+    public void putParameter(String key, FileUpload file)
+    {
+        if( _files == null )
+        {
+            _files = new TreeMap<String, FileUpload>();
+        }
+
+        _files.put(key, file);
     }
 
-    public void initialize(String uriPath, String bodyData)
+    public void putBodyData(String bodyData)
     {
-        _uriAdj = uriPath;
-        _bodyData = bodyData;
+        _bodyData += bodyData;
     }
 
     public Channel channel()
     {
         return _ctx.channel();
+    }
+    
+    public HttpRequest getHttpRequest()
+    {
+        return _httpRq;
+    }
+    
+    public long getRequestedTime()
+    {
+        return _sTick;
+    }
+    
+    public String getTraceID()
+    {
+        return _traceID;
     }
     
     public String getRemoteDescription()
@@ -69,21 +126,22 @@ public class TomyRequestor implements HttpRequest
     // 여러 헤더값 중 첫 번째 것을 반환. 없으면 null.
     public String getHeaderValue(String name)
     {
-        List<String> h = this.getHeaderValues(name);
-        return h == null || h.isEmpty() ? null : h.get(0);
+        return _httpRq.headers().get(name);
     }
     
     public String getBodyData()
     {
         return _bodyData;
     }
-    
-    public JSONObject getDataAsJson()
-    {
-        if( _jsonData == null )
-            _jsonData = UT.parseJSON(_bodyData);
 
-        return _jsonData;
+    public String getMimeType()
+    {
+        if( _mimeType == null )
+        {
+            _mimeType = (String) HttpUtil.getMimeType( _httpRq.headers().get(HttpHeaderNames.CONTENT_TYPE) );;
+        }
+
+        return _mimeType; 
     }
 
     @Override
@@ -154,6 +212,13 @@ public class TomyRequestor implements HttpRequest
         
         return pList == null ? null : pList.get(0);
     }
+    
+    public File parameterFile(String name) throws Exception
+    {
+        FileUpload upFile = _files.get(name);
+        
+        return upFile == null ? null : upFile.getFile();
+    }
 
     public Map<String, List<String>> parameterMap()
     {
@@ -198,17 +263,28 @@ public class TomyRequestor implements HttpRequest
     
     public String oneLineParameter(int limit)
     {
-        if( _params == null || _params.isEmpty() )
-        {
-            return "";
-        }
-
         StringBuilder sb = new StringBuilder();
         
-        for(Entry<String, List<String>> elem : _params.entrySet())
+        if( _params != null && !_params.isEmpty() )
         {
-            List<String> valueList = elem.getValue();
-            sb.append(elem.getKey()).append("=").append(valueList.isEmpty() ? "" : UT.makeEllipsis(valueList.get(0), limit)).append(";");
+            for(Entry<String, List<String>> elem : _params.entrySet())
+            {
+                List<String> valueList = elem.getValue();
+                sb.append(elem.getKey()).append("=")
+                  .append(valueList.isEmpty() ? "" : UT.makeEllipsis(valueList.get(0), limit))
+                  .append(";");
+            }
+        }
+        
+        if( _files != null && !_files.isEmpty() )
+        {
+            for(Entry<String, FileUpload> elem : _files.entrySet())
+            {
+                FileUpload file = elem.getValue();
+                sb.append(elem.getKey()).append("=File(")
+                  .append(file.getFilename()).append(", ").append(file.length())
+                  .append(");");
+            }
         }
 
         return sb.toString();

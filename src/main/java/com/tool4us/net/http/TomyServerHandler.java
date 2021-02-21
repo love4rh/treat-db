@@ -11,19 +11,27 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpChunkedInput;
-import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.multipart.Attribute;
+import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
+import io.netty.handler.codec.http.multipart.DiskAttribute;
+import io.netty.handler.codec.http.multipart.DiskFileUpload;
+import io.netty.handler.codec.http.multipart.FileUpload;
+import io.netty.handler.codec.http.multipart.HttpData;
+import io.netty.handler.codec.http.multipart.HttpDataFactory;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder.EndOfDataDecoderException;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
@@ -31,18 +39,14 @@ import io.netty.util.CharsetUtil;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import com.tool4us.common.Logs;
@@ -50,17 +54,18 @@ import com.tool4us.common.Logs;
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
 import static io.netty.handler.codec.http.HttpMethod.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 import static com.tool4us.common.Util.UT;
 
 
 
-public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpRequest>
+public class TomyServerHandler extends SimpleChannelInboundHandler<HttpObject>
 {
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
+    
+    private static final HttpDataFactory _factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE);
     
     /**
      * Request Handler를 생성하기 위한 멤버
@@ -73,11 +78,6 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
      */
     private Map<String, ApiHandler>    _reqMap = null;
     
-    /**
-     * 최근 요청된 Request 객체
-     */
-    private FullHttpRequest             _request = null;
-    
     private IStaticFileMap              _vPath = null;
     
     /**
@@ -85,6 +85,27 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
      * false이면 기본 호출 이력만 남김.
      */
     private boolean                     _detailLogging = true;
+    
+    /**
+     * 최근 요청된 Request 객체
+     */
+    private TomyRequestor               _request = null;
+    
+    private HttpPostRequestDecoder      _decoder = null;
+    
+    private HttpData                    _partialContent = null;
+    
+    
+    static
+    {
+        DiskFileUpload.deleteOnExitTemporaryFile = true; // should delete file
+                                                         // on exit (in normal
+                                                         // exit)
+        DiskFileUpload.baseDirectory = null; // system temp directory
+        DiskAttribute.deleteOnExitTemporaryFile = true; // should delete file on
+                                                        // exit (in normal exit)
+        DiskAttribute.baseDirectory = null; // system temp directory
+    }
     
     
     public TomyServerHandler(TomyApiHandlerFactory reqFac)
@@ -129,6 +150,10 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception
     {
+        if( _decoder != null )
+        {
+            _decoder.cleanFiles();
+        }
         super.channelInactive(ctx);
     }
 
@@ -136,87 +161,149 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception
     {
         super.channelReadComplete(ctx);
-        // ctx.flush();
+        ctx.flush();
     }
     
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg)
+    protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg)
     {
-        long sTick = UT.tickCount();
-
-        this._request = msg;
-        
-        if( !msg.decoderResult().isSuccess() )
+        if( msg instanceof HttpRequest )
         {
-            sendError(ctx, BAD_REQUEST);
-            return;
-        }
-        
-        // TODO 다른 메소드 지원 여부 검토
-        if( !GET.equals(msg.method()) && !POST.equals(msg.method()) )
-        {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-            return;
-        }
-
-        String uriPath = msg.uri();
-        String traceID = UT.makeRandomeString(12); // Request와 Response pair 구분을 위한 ID.
-        TomyRequestor reqEx = new TomyRequestor(_request, ctx);
-
-        if( GET.equals(msg.method()) )
-        {
+            HttpRequest request = (HttpRequest) msg;
+            
+            _request = new TomyRequestor(request, ctx);
+            
+            String uriPath = request.uri();
             QueryStringDecoder gDecoder = new QueryStringDecoder(uriPath);
+            
             uriPath = gDecoder.path();
+            _request.initialize(uriPath, gDecoder.parameters());
             
-            Logs.info("[REQ:{}] [GET] [IP:{}] [URI:{}]", traceID, reqEx.getRemoteDescription(), uriPath);
+            Logs.info("[{}:REQ] [{}] [IP:{}] [URI:{}]", _request.getTraceID(), request.method().name(), _request.getRemoteDescription(), uriPath);
 
-            reqEx.initialize(uriPath, gDecoder.parameters()); 
-        }
-        else if( POST.equals(msg.method()) )
-        {
-            Logs.info("[REQ:{}] [POST] [IP:{}] [URI:{}]", traceID, reqEx.getRemoteDescription(), uriPath);
-            
-            String contentType = null;
-            if( msg.headers().contains(HttpHeaderNames.CONTENT_TYPE) )
+            if( !GET.equals(request.method()) )
             {
-                contentType = HttpUtil.getMimeType(msg).toString();
-            }
-            
-            if( "application/x-www-form-urlencoded".equals(contentType) )
-            {
-                Map<String, List<String>> params = new TreeMap<String, List<String>>();
-                
-                HttpPostRequestDecoder postDecoder = new HttpPostRequestDecoder(msg);
-                List<InterfaceHttpData> paramList = postDecoder.getBodyHttpDatas();
-
-                for(InterfaceHttpData data : paramList)
-                {
-                    List<String> paramVal = new ArrayList<String>();
-                    try
-                    {
-                        paramVal.add( ((Attribute)data).getValue() );
-                    }
-                    catch( Exception xe )
-                    {
-                        //
-                    }
-    
-                    params.put(data.getName(), paramVal);
-                }
-                
-                reqEx.initialize(uriPath, params);
-            }
-            else
-            {
-                String bodyData = msg.content().toString(Charset.forName("UTF-8"));
-                reqEx.initialize(uriPath, bodyData);
+                _decoder = new HttpPostRequestDecoder(_factory, request);
             }
         }
         
+        if( msg instanceof HttpContent )
+        {
+            HttpContent httpContent = (HttpContent) msg;
+            
+            // 파일 보내는 경우를 제외하고 Body Data를 저장하기 위하여 비
+            if( !"multipart/form-data".equals(_request.getMimeType()) )
+            {
+                // TODO 문자열 중간에서 짤린 경우라면 이렇게 넣으면 안됨...
+                _request.putBodyData(httpContent.content().toString(CharsetUtil.UTF_8));
+            }
+            
+            if( _decoder != null )
+            {
+                try
+                {
+                    _decoder.offer(httpContent);
+                    readHttpDataChunkByChunk();
+                }
+                catch( Exception xe )
+                {
+                    // TODO send error?
+                    Logs.trace(xe);
+                }
+            }
+            
+            if( httpContent instanceof LastHttpContent )
+            {                
+                procResponse(ctx);   
+                reset();
+            }
+        }
+    }
+    
+    private void reset()
+    {
+        _request = null;
+
+        // destroy the decoder to release all resources
+        if( _decoder != null )
+        {
+            _decoder.destroy();
+            _decoder = null;
+        }
+    }
+    
+    private void readHttpDataChunkByChunk() throws Exception
+    {
+        try
+        {
+            while( _decoder.hasNext() )
+            {
+                InterfaceHttpData data = _decoder.next();
+                if( data != null )
+                {
+                    // check if current HttpData is a FileUpload and previously set as partial
+                    if( _partialContent == data )
+                    {
+                        _partialContent = null;
+                    }
+                    
+                    // new value
+                    writeHttpData(data);
+                }
+            }
+        }
+        catch( EndOfDataDecoderException xe )
+        {
+            // end of data. exception should be ignored.
+        }
+        
+        // Check partial decoding for a FileUpload
+        InterfaceHttpData data = _decoder.currentPartialHttpData();
+        if( data != null && _partialContent == null )
+        {
+            _partialContent = (HttpData) data;
+        }
+    }
+    
+    private void writeHttpData(InterfaceHttpData data) throws Exception
+    {
+        switch( data.getHttpDataType() )
+        {
+        case Attribute:
+            {
+                Attribute attribute = (Attribute) data;
+                _request.putParameter(attribute.getName(), attribute.getValue());
+            } break;
+        case FileUpload:
+            {
+                FileUpload fileUpload = (FileUpload) data;
+                if( fileUpload.isCompleted() )
+                {
+                    _request.putParameter(data.getName(), fileUpload);
+                    // fileUpload.length()
+                    // fileUpload.getString(fileUpload.getCharset());
+                }
+            } break;
+        
+        default:
+            break;
+        }
+    }
+
+    private void procResponse(ChannelHandlerContext ctx)
+    {
+        TomyRequestor reqEx = this._request;
+        
+        String uriPath = reqEx.uri();
+        String traceID = reqEx.getTraceID();
+        long sTick = reqEx.getRequestedTime(); // 요청시간
+        long mTick = UT.tickCount(); // 요청 데이터 수령 완료 시간
+        long pTick = mTick; // 요청 처리 완료 시간
+
         final int lenLimit = 96;
         if( _detailLogging )
         {
-            Logs.info("[DTL:{}] [IP:{}] [URI:{}] [HAEDER:{}] [PARAM:{}] [BODY:{}]"
+            Logs.info("[{}:DTL] [IP:{}] [URI:{}] [HAEDER:{}] [PARAM:{}] [BODY:{}]"
                 , traceID
                 , reqEx.getRemoteDescription()
                 , reqEx.uri()
@@ -241,9 +328,12 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 
                 // resEx.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
                 resEx.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
-                resEx.setResultContent( reqHandle.call(reqEx, resEx) );
+                
+                String retContent = reqHandle.call(reqEx, resEx);
+                resEx.setResultContent( retContent );
+                pTick = UT.tickCount();
 
-                sendResponse(ctx, resEx);
+                sendResponse(ctx, this._request, resEx);
             }
             catch( Exception xe )
             {
@@ -258,13 +348,15 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 uriPath += _vPath.getRootFile();
             }
             
-            File sf = _vPath.getFile(uriPath);
+            File staticFile = _vPath.getFile(uriPath);
             
-            if( sf != null && sf.exists() && _vPath.isAllowed(uriPath) )
+            pTick = UT.tickCount();
+            
+            if( staticFile != null && staticFile.exists() && _vPath.isAllowed(uriPath) )
             {
                 try
                 {
-                    sendFile(_request, ctx, sf);
+                    sendFile(reqEx.getHttpRequest(), ctx, staticFile);
                 }
                 catch( Exception xe )
                 {
@@ -272,7 +364,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 }
             }
             else
-                retStatus = HttpResponseStatus.FORBIDDEN;
+                retStatus = HttpResponseStatus.NOT_FOUND;
         }
         else
             retStatus = HttpResponseStatus.NOT_FOUND;
@@ -289,24 +381,29 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             retContent = resEx.oneLineResponse(1024);
         }
         
-        if( _detailLogging )
+        long eTick = UT.tickCount();
+
+        if( _detailLogging && UT.isValidString(retContent) )
         {
-            Logs.info("[RES:{}] [PTIME:{}] [STATUS:{}] [CONTENT:{}]"
-                , traceID, UT.tickCount() - sTick, retStatus.code(), retContent
-            );
+            Logs.info("[{}:RES] [PTIME:{}, {}, {}, {}] [STATUS:{}] [CONTENT:{}]"
+                , traceID
+                , mTick - sTick, pTick - mTick, eTick - pTick, eTick - sTick
+                , retStatus.code()
+                , retContent);
         }
         else
         {
-            Logs.info("[RES:{}] PTIME:[{}], STATUS:[{}]"
-                , traceID, UT.tickCount() - sTick, retStatus.code()
-            );
+            Logs.info("[{}:RES] PTIME:[{}, {}, {}, {}] [STATUS:{}]"
+                , traceID
+                , mTick - sTick, pTick - mTick, eTick - pTick, eTick - sTick
+                , retStatus.code());
         }
     }
 
-    private void sendResponse(ChannelHandlerContext ctx, TomyResponse response)
+    private static void sendResponse(ChannelHandlerContext ctx, TomyRequestor request, TomyResponse response)
     {
         // Decide whether to close the connection or not.
-        boolean keepAlive = HttpUtil.isKeepAlive(_request);
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
 
         if( keepAlive && response.content() != null )
         {
@@ -319,7 +416,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
         
         // Encode the cookie.
-        String cookieString = _request.headers().get(COOKIE);
+        String cookieString = request.headers().get(COOKIE);
         if( cookieString != null )
         {
             Set<Cookie> cookies = ServerCookieDecoder.LAX.decode(cookieString);
@@ -332,9 +429,14 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 }
             }
         }
-
+        
         // Write the response.
-        ctx.write(response);
+        ChannelFuture future = ctx.writeAndFlush(response);
+
+        if( !keepAlive )
+        {
+            future.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
     private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
@@ -356,13 +458,13 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
         // Date header
         Calendar time = new GregorianCalendar();
-        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
+        response.headers().set(DATE, dateFormatter.format(time.getTime()));
 
         // Add cache headers
         time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
-        response.headers().set(HttpHeaderNames.EXPIRES, dateFormatter.format(time.getTime()));
-        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
-        response.headers().set(HttpHeaderNames.LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
+        response.headers().set(EXPIRES, dateFormatter.format(time.getTime()));
+        response.headers().set(CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
+        response.headers().set(LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
     }
 
     /**
@@ -374,18 +476,18 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     private static void setContentTypeHeader(HttpResponse response, File file)
     {
         String path = file.getPath().toLowerCase();
-        String mimeType = UT.getMimeType( UT.getExtension(path) );
+        String mimeType = UT.getExtensionMimeType( UT.getExtension(path) );
         
         // TODO ";charset=UTF-8" ??
 
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeType);
+        response.headers().set(CONTENT_TYPE, mimeType);
     }
     
     /**
      * If Keep-Alive is disabled, attaches "Connection: close" header to the response
      * and closes the connection after the response being sent.
      */
-    private static void sendAndCleanupConnection(final FullHttpRequest request, ChannelHandlerContext ctx, FullHttpResponse response)
+    private static void sendAndCleanupConnection(final HttpRequest request, ChannelHandlerContext ctx, FullHttpResponse response)
     {
         final boolean keepAlive = HttpUtil.isKeepAlive(request);
         HttpUtil.setContentLength(response, response.content().readableBytes());
@@ -393,9 +495,9 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         {
             // We're going to close the connection as soon as the response is sent,
             // so we should also make it clear for the client.
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+            response.headers().set(CONNECTION, HttpHeaderValues.CLOSE);
         } else if (request.protocolVersion().equals(HTTP_1_0)) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+            response.headers().set(CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
 
         ChannelFuture flushPromise = ctx.writeAndFlush(response);
@@ -406,12 +508,12 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
     }
     
-    private static void sendFile(FullHttpRequest request, ChannelHandlerContext ctx, File file) throws Exception
+    private static void sendFile(HttpRequest request, ChannelHandlerContext ctx, File file) throws Exception
     {
         final boolean keepAlive = HttpUtil.isKeepAlive(request);
         
         // Cache Validation
-        String ifModifiedSince = request.headers().get(HttpHeaderNames.IF_MODIFIED_SINCE);
+        String ifModifiedSince = request.headers().get(IF_MODIFIED_SINCE);
         if( ifModifiedSince != null && !ifModifiedSince.isEmpty() )
         {
             SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
@@ -423,12 +525,12 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             long fileLastModifiedSeconds = file.lastModified() / 1000;
             if( ifModifiedSinceDateSeconds == fileLastModifiedSeconds )
             {
-                FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, NOT_MODIFIED, Unpooled.EMPTY_BUFFER);
+                FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_MODIFIED, Unpooled.EMPTY_BUFFER);
 
                 dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
 
                 Calendar time = new GregorianCalendar();
-                response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
+                response.headers().set(DATE, dateFormatter.format(time.getTime()));
 
                 sendAndCleanupConnection(request, ctx, response);
                 return;
@@ -449,7 +551,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         
         long fileLength = raf.length();
 
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
 
         HttpUtil.setContentLength(response, fileLength);
 
@@ -457,9 +559,9 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         setDateAndCacheHeaders(response, file);
 
         if( !keepAlive )
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+            response.headers().set(CONNECTION, HttpHeaderValues.CLOSE);
         else if( request.protocolVersion().equals(HTTP_1_0) )
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+            response.headers().set(CONNECTION, HttpHeaderValues.KEEP_ALIVE);
 
         // Write the initial line and the header.
         ctx.write(response);

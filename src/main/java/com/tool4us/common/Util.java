@@ -148,7 +148,7 @@ public enum Util
     /**
      * 확장자에 따른 MIME type 반환. '.txt' --> 'plain/text'
      */
-    public String getMimeType(String extension)
+    public String getExtensionMimeType(String extension)
     {
         String mimeType = _mimeTypeMap.get(extension);
         return mimeType != null ? mimeType : "application/octet-stream";

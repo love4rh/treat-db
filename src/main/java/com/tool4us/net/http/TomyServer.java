@@ -12,8 +12,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.cors.CorsConfig;
 import io.netty.handler.codec.http.cors.CorsConfigBuilder;
@@ -21,7 +21,6 @@ import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.netty.handler.stream.ChunkedWriteHandler;
 
 
 
@@ -224,9 +223,10 @@ class HttpServerInitializer extends ChannelInitializer<SocketChannel>
             .build();
 
         pl.addLast(new HttpServerCodec())
-          .addLast(new HttpObjectAggregator(65536))
-          .addLast(new ChunkedWriteHandler())
+          // .addLast(new HttpObjectAggregator(65536))
+          // .addLast(new ChunkedWriteHandler())
           .addLast(new CorsHandler(corsConfig))
+          .addLast(new HttpContentCompressor())
           .addLast(new TomyServerHandler(_requestFac, _vRoot))
         ;
     }
