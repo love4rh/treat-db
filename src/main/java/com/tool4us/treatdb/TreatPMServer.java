@@ -38,7 +38,7 @@ public class TreatPMServer implements IStaticFileMap
         // System.setProperty("ssl", "true");
 
         _serverBase = new TomyServer("com.tool4us.treatdb.service", this);
-        _serverBase.start(OPT.port(), OPT.bossThreadNum(), OPT.serviceThreadNum(), 0);
+        _serverBase.start(OPT.port(), OPT.bossThreadNum(), OPT.serviceThreadNum());
 
         _taskQueue.startQueue(2, "TreatDB Batch");
     }

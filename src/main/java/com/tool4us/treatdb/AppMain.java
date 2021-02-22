@@ -60,7 +60,7 @@ public class AppMain
         
         if( OPT.loggingFile() )
         {
-            Logs.initDefault(UsefulTool.concat(UsefulTool.GetModulePath(), File.separator, "log") , "treatDB");
+            Logs.initialize(UsefulTool.concat(UsefulTool.GetModulePath(), File.separator, "log") , "treatDB");
             Logs.addConsoleLogger();
         }
         else

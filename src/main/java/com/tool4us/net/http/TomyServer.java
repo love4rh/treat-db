@@ -1,5 +1,7 @@
 package com.tool4us.net.http;
 
+import java.io.File;
+
 import com.tool4us.common.Logs;
 import com.tool4us.net.LoggingHandlerEx;
 
@@ -20,7 +22,6 @@ import io.netty.handler.codec.http.cors.CorsConfigBuilder;
 import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
 
 
 
@@ -65,43 +66,48 @@ public class TomyServer
     {
     	return _bossGroup != null;
     }
-
+    
     /**
      * 서버 실행.
-     * 
-     * @param port          	포트번호
-     * @param bossThreadNum 	Listening Thread 개수
-     * @param workThreadNum 	작업 Thread 개수
+     * @param port              포트번호
+     * @param bossThreadNum     Listening Thread 개수
+     * @param workThreadNum     작업 Thread 개수
      * @throws Exception
      */
     public void start(int port, int bossThreadNum, int workThreadNum) throws Exception
     {
-        this.start(port, bossThreadNum, workThreadNum, 0);
+        this.start(port, bossThreadNum, workThreadNum, null, null, 0);
     }
 
     /**
      * 서버 실행.
-     * 
-     * @param port              포트번호
-     * @param bossThreadNum     Listening Thread 개수
-     * @param workThreadNum     작업 Thread 개수
+     * @param port          	포트번호
+     * @param bossThreadNum 	Listening Thread 개수
+     * @param workThreadNum 	작업 Thread 개수
      * @param loggingType       로그 남길지 여부. 0: 안 남김, 1: 호출된 함수 목록만 남김, 9: 주고 받은 데이터도 남기기
      * @throws Exception
      */
     public void start(int port, int bossThreadNum, int workThreadNum, int loggingType) throws Exception
     {
-        final boolean SSL = System.getProperty("ssl") != null;
+        this.start(port, bossThreadNum, workThreadNum, null, null, loggingType);
+    }
+    
+    /**
+     * 서버 실행. 
+     * @param port              포트번호
+     * @param bossThreadNum     Listening Thread 개수
+     * @param workThreadNum     작업 Thread 개수
+     * @param certificateFile   SSL 통신을 위한 인증서 파일
+     * @param privateKeyFile    SSL 통신을 위한 개인키 파일
+     * @param loggingType       로그 남길지 여부. 0: 안 남김, 1: 호출된 함수 목록만 남김, 9: 주고 받은 데이터도 남기기
+     * @throws Exception
+     */
+    public void start(int port, int bossThreadNum, int workThreadNum, File certificateFile, File privateKeyFile, int loggingType) throws Exception
+    {
+        final SslContext sslCtx = certificateFile != null && privateKeyFile != null
+            ? SslContextBuilder.forServer(certificateFile, privateKeyFile).build()
+            : null;
 
-        final SslContext sslCtx;
-        
-        if( SSL )
-        {
-            SelfSignedCertificate ssc = new SelfSignedCertificate();
-            sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
-        }
-        else
-            sslCtx = null;
-        
     	_port = port;
         
         // Configure the server.
@@ -125,7 +131,7 @@ public class TomyServer
             _bootstrap.option(ChannelOption.SO_BACKLOG, 100)
 	            // .option(ChannelOption.SO_KEEPALIVE, true)
 	            // .option(ChannelOption.ALLOCATOR, new PooledByteBufAllocator())
-	            .childHandler( new HttpServerInitializer(_handlerFactory, sslCtx, loggingType, _vRoot) );
+	            .childHandler( new TomyServerInitializer(_handlerFactory, sslCtx, loggingType, _vRoot) );
             
             // Start the server.
             _bootChannel = _bootstrap.bind(_port).sync(); // .channel().closeFuture().sync();
@@ -176,7 +182,7 @@ public class TomyServer
  * netty example에서 가져옴.
  * https://github.com/netty/netty/blob/master/example/src/main/java/io/netty/example/http/upload/HttpUploadServerInitializer.java
  */
-class HttpServerInitializer extends ChannelInitializer<SocketChannel>
+class TomyServerInitializer extends ChannelInitializer<SocketChannel>
 {
     private final SslContext                _sslCtx;
     private final TomyApiHandlerFactory     _requestFac;
@@ -185,12 +191,12 @@ class HttpServerInitializer extends ChannelInitializer<SocketChannel>
     private int     _loggingType = 0;
 
     
-    public HttpServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType)
+    public TomyServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType)
     {
         this(reqFac, sslCtx, loggingType, null);
     }
     
-    public HttpServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType, IStaticFileMap vRoot)
+    public TomyServerInitializer(TomyApiHandlerFactory reqFac, SslContext sslCtx, int loggingType, IStaticFileMap vRoot)
     {
         _sslCtx = sslCtx;
         _requestFac = reqFac;

@@ -138,7 +138,11 @@ public class TomyRequestor implements HttpRequest
     {
         if( _mimeType == null )
         {
-            _mimeType = (String) HttpUtil.getMimeType( _httpRq.headers().get(HttpHeaderNames.CONTENT_TYPE) );;
+            String contentType = _httpRq.headers().get(HttpHeaderNames.CONTENT_TYPE);
+            if( UT.isValidString(contentType) )
+                _mimeType = (String) HttpUtil.getMimeType(contentType);
+            else
+                _mimeType = "";
         }
 
         return _mimeType; 

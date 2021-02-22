@@ -17,7 +17,10 @@ import org.apache.log4j.PropertyConfigurator;
 
 
 /**
- * 로깅 클래스
+ * 로깅을 위한 클래스. Log4J를 이용하여 간단히 로그를 남길 수 있도록 구현한 클래스임.
+ * 각 클래스별로 logger를 새로 받아 할 필요성을 못느껴 개발하였음.(굳이 클래스명을 오픈할 필요는 없다고 생각함)
+ * 기본적으로 파일에 로그를 남기며, Console에 로그를 남기려면 addConsoleLogger() 호출. 호출할 때마다 Appender가 추가되므로 한 번만 호출.
+ * 파일에 남길 로그를 지정하기 위하여 initialize() 호출해야 함.
  * 
  * @author TurboK
  */
@@ -32,31 +35,42 @@ public class Logs extends ILogging
 	public static final String  _sep_ = "|";
 	
 	/// Singleton 유일 객체
-	private static Logs	        _theOne = null;
+	private static final Logs   _theOne;
 
 	/// Main Logger 클래스
 	private  Logger		        _logger = null;
+	
+	
+	static
+	{
+	    _theOne = new Logs();
+        _theOne._logger = Logger.getLogger( "main" );
+	}
 
 	
 	/// private constructor
 	private Logs() { }
 	
+	public static void initialize(String loggingFolder, String progName)
+	{
+	    initialize(loggingFolder, progName, "yyyy-MM-dd");
+	}
+	
 	/**
 	 * 기본 설정으로 Logger 클래스를 생성하는 메소드.
 	 * NOTE: 기존에 설정되어 있는 Appender 클래스를 모두 제거함.
-	 * @param loggingFolder
-	 * @param progName
+	 * @param loggingFolder    로그를 저장할 파일의 경로
+	 * @param progName         로그 파일의 prefix
+	 * @param rollingType      롤링할 기준. null이면 일단위로 생성. 월단위: yyyy-MM, 주단위: yyyy-ww, 일단위: yyyy-MM-dd,
+	 *                         반나절 단위: yyyy-MM-dd-a, 시간단위: yyyy-MM-dd-HH, 분단위: yyyy-MM-dd-HH-mm
 	 * @param errorLogging     에러만 따로 남길 지 여부 TODO
 	 */
-	public static void initDefault(String loggingFolder, String progName)
-	{
-	    if( _theOne == null )
-	    {
-            _theOne = new Logs();
-            _theOne._logger = Logger.getLogger( "main" );
-	    }
-	    
+	public static void initialize(String loggingFolder, String progName, String rollingType)
+	{   
 	    _theOne._logger.removeAllAppenders();
+	    
+	    if( rollingType == null )
+	        rollingType = "yyyy-MM-dd";
 	            
         Layout layout = new PatternLayout(_defaultPattern_);
 
@@ -77,7 +91,7 @@ public class Logs extends ILogging
         try
         {
             DailyMaxRollingFileAppender rollingAppender
-                    = new DailyMaxRollingFileAppender(layout, fileName, ".yyyy-MM-dd");
+                    = new DailyMaxRollingFileAppender(layout, fileName, "." + rollingType);
 
             rollingAppender.setMaxBackupIndex(15);
             
@@ -91,7 +105,7 @@ public class Logs extends ILogging
 	
 	public static void addConsoleLogger()
 	{
-        _theOne._logger.addAppender(new ConsoleAppender( new PatternLayout(_defaultPattern_) ));
+	    _theOne._logger.addAppender(new ConsoleAppender( new PatternLayout(_defaultPattern_) ));
 	}
 
 	/**
@@ -100,9 +114,6 @@ public class Logs extends ILogging
 	 */
 	public static void initWithFile(String logPropFile)
 	{
-	    if( _theOne == null )
-            _theOne = new Logs();
-	    
         BasicConfigurator.resetConfiguration();
         PropertyConfigurator.configure(logPropFile);
             
@@ -110,14 +121,8 @@ public class Logs extends ILogging
 	}
 
 	public static Logs instance()
-	{   
-		if( _theOne == null )
-		{
-		    _theOne = new Logs();
-		    _theOne._logger = Logger.getLogger( "main" );
-		}
-
-		return _theOne;
+	{
+	    return _theOne;
 	}
 
 	public Logger getLogger()
