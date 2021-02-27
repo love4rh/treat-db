@@ -64,10 +64,10 @@ public class YMLParser
          * 5: 멀티라인 문자열 (멀티 싱글라인 >) 
          * 4: 객체
          */
-        public int _type = 0;
+        private int     _type = 0;
 
-        public String _key = "";
-        public String _value = "";
+        private String  _key = "";
+        private String  _value = "";
         
         public Token()
         {
@@ -76,11 +76,33 @@ public class YMLParser
             _value = "";
         }
 
-        public Token(int indent, int type, String key)
+        public Token(String key, int indent, int type)
         {
+            _key= key;
             _indent = indent;
             _type = type;
-            _key= key;
+        }
+        
+        public Token setIndent(int indent)
+        {
+            _indent = indent;
+            return this;
+        }
+        
+        public Token setType(int type)
+        {
+            _type = type;
+            return this;
+        }
+        
+        public boolean isMultiLine()
+        {
+            return _type == 3;
+        }
+        
+        public boolean isMultiSingleLine()
+        {
+            return _type == 4;
         }
     }
 
@@ -91,7 +113,7 @@ public class YMLParser
         _stack = new Stack<Token>();
     }
     
-    // p에 해당하는 문자가 Whitespace인지 여부 반환
+    // p에 해당하는 문자가 Whitespace인지 여부 반환.
     public boolean isWhitespace(final String text, int p)
     {
         return p <= text.length() || Character.isWhitespace(text.charAt(p));
@@ -115,34 +137,54 @@ public class YMLParser
             _stack = new Stack<Token>();
             return;
         }
-        
+
         int p = skipSpace(lineText, 0);
 
+        int curIndent = p;
         Token curToken = _stack.isEmpty() ? null : _stack.peek();
 
         // 빈 문자열이거나 화이트 스페이스만 있는 문자열임
         if( p >= lineText.length() )
         {
+            if( curToken != null )
+            {
+                
+            }
             // |(CR) 나 >(공백) 로 멀티 라인이라면 추가하고
-            // 값이 와야 하는 경우인데 없다면 에러 --> 앞에 키만 있는 경우
+            // 키가 정의된 것이 있다면 null 값 입력
+            // 값이 와야 하는데 없다면 에러 
             // 이외의 경우는 무시
-        }
-        
-        int curIndent = p;
-        char ch = lineText.charAt(p);
-        
-        // 목록.
-        // 이전 키가 없으면 목록으로 이루어진 yml임.
-        // 이전 키가 있으면 목록 가능 여부, indent 체크
-        if( ch == '-' && isWhitespace(lineText, p + 1) )
-        {
             
+            return;
         }
-
+        
+        char ch = lineText.charAt(p);
         StringBuilder sbKey = new StringBuilder();
+
         while( p < lineText.length() )
         {
+            // 다음 문자가 공백(라인 끝 포함)인지 여부
+            boolean nextSpace = this.isWhitespace(lineText, p + 1);
+            
             ch = lineText.charAt(p);
+            
+            // 특정 상황을 나타내는 문자 뒤는 화이트 스페이스가 옮
+            
+            // 새로운 키 (Object)
+            if( nextSpace && ch == ':' )
+            {
+                //
+            }
+            else if( nextSpace && ch == '-' )
+            {
+                //
+            }
+            else
+            {
+                //
+            }
+            
+            p += 1;
         }
         
         // 
@@ -189,5 +231,34 @@ public class YMLParser
         in.close();
 
         return psr.getResult();
+    }
+    
+    
+    public static void main(String[] args)
+    {
+        YMLParser yml = new YMLParser();
+        
+        String[] testYml = new String[]
+        {
+              "---"
+            , "te,:st: aaa: "
+            , ""
+            , "test2:"
+            , "- "
+            , "  - aaa"
+            , "    - dfsa"
+        };
+        
+        try
+        {
+            for(String lineText : testYml)
+            {
+                yml.pushLineText(lineText);
+            }
+        }
+        catch(Exception xe)
+        {
+            xe.printStackTrace();
+        }
     }
 }
