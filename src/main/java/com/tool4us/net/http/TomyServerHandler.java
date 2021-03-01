@@ -59,6 +59,13 @@ import static com.tool4us.common.Util.UT;
 
 
 
+/**
+ * HTTP 데이터 처리를 위한 핸들러. 다음 netty example을 참조하여 작성함.
+ * @see https://github.com/netty/netty/tree/4.1/example/src/main/java/io/netty/example/http/file
+ * @see https://github.com/netty/netty/tree/4.1/example/src/main/java/io/netty/example/http/upload
+ * 
+ * @author TurboK
+ */
 public class TomyServerHandler extends SimpleChannelInboundHandler<HttpObject>
 {
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";

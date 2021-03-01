@@ -4,9 +4,10 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
-import java.util.Stack;
 
 import org.json.JSONObject;
+
+import com.tool4us.common.YMLToken.Type;
 
 
 
@@ -46,71 +47,19 @@ import org.json.JSONObject;
  */
 public class YMLParser
 {
-    private JSONObject      _result = null;
+    private int         _lineNo = 0;
     
-    // 이전 단게의 상태 저장. [indent, element 상태(목록, 멀티라인, 싱글멀티라인), 현재까지 추가한 값]
-    private Stack<Token>    _stack = null;
-
+    private YMLToken    _rootToken = null;
     
-    public static class Token
-    {
-        public int _indent = 0;
-
-        /**
-         * 0: 아직 모름
-         * 1: 단순 값
-         * 2: 목록 (-)
-         * 3: 멀티라인 문자열 (|)
-         * 5: 멀티라인 문자열 (멀티 싱글라인 >) 
-         * 4: 객체
-         */
-        private int     _type = 0;
-
-        private String  _key = "";
-        private String  _value = "";
-        
-        public Token()
-        {
-            _indent = 0;
-            _type = 0;
-            _value = "";
-        }
-
-        public Token(String key, int indent, int type)
-        {
-            _key= key;
-            _indent = indent;
-            _type = type;
-        }
-        
-        public Token setIndent(int indent)
-        {
-            _indent = indent;
-            return this;
-        }
-        
-        public Token setType(int type)
-        {
-            _type = type;
-            return this;
-        }
-        
-        public boolean isMultiLine()
-        {
-            return _type == 3;
-        }
-        
-        public boolean isMultiSingleLine()
-        {
-            return _type == 4;
-        }
-    }
+    // 현재 처리 중인 토큰
+    private YMLToken    _curToken = null;
 
     
     public YMLParser()
     {
-        _result = new JSONObject();
-        _stack = new Stack<Token>();
+        _lineNo = 0;
+        _rootToken = null;
+        _curToken = null;
     }
     
     // p에 해당하는 문자가 Whitespace인지 여부 반환.
@@ -130,52 +79,116 @@ public class YMLParser
 
     public void pushLineText(final String lineText) throws ParseException
     {
+        _lineNo += 1;
+        
         // --- 고려 해야 함.
         if( lineText.startsWith("---") )
         {
             // 새로운 블럭의 시작임
-            _stack = new Stack<Token>();
+            if( _curToken != null )
+            {
+                // TODO 현재 처리 중인 토큰 정리
+            }
+            _curToken = null;
             return;
         }
 
         int p = skipSpace(lineText, 0);
 
         int curIndent = p;
-        Token curToken = _stack.isEmpty() ? null : _stack.peek();
 
         // 빈 문자열이거나 화이트 스페이스만 있는 문자열임
         if( p >= lineText.length() )
         {
-            if( curToken != null )
+            if( _curToken != null )
             {
-                
+                switch( _curToken.type() )
+                {
+                case MULTILINE: // 멀티라인 문자열 (|)
+                    _curToken.addValue("\n");
+                    break;
+                case VALUE: // 기본값, 멀티라인 문자열 (멀티 싱글라인 >)
+                    _curToken.addValue(" ");
+                    break;
+                default:
+                    break;
+                }
             }
-            // |(CR) 나 >(공백) 로 멀티 라인이라면 추가하고
-            // 키가 정의된 것이 있다면 null 값 입력
-            // 값이 와야 하는데 없다면 에러 
-            // 이외의 경우는 무시
-            
+
+            // 이외의 경우는 특별히 취해야 할 액션 없음.
             return;
         }
         
         char ch = lineText.charAt(p);
-        StringBuilder sbKey = new StringBuilder();
+        int prevIndent = _curToken == null ? 0 : _curToken.indent();
 
-        while( p < lineText.length() )
+        // 목록 원소 (자식)
+        if( curIndent >= prevIndent && ch == '-' && this.isWhitespace(lineText, p + 1) )
         {
-            // 다음 문자가 공백(라인 끝 포함)인지 여부
-            boolean nextSpace = this.isWhitespace(lineText, p + 1);
+            // 최상의 객체가 없는 경우는 최상위 객체는 목록임
+            if( _curToken == null )
+            {
+                _curToken = new YMLToken(null, curIndent).setType(Type.LIST);
+            }
+            else
+            {
+                // 현재 처리 중인 토큰이 목록 형태가 아니라면 오류임.
+                if( !_curToken.canBeType(Type.LIST, curIndent) )
+                {
+                    throw new ParseException("Invalid YML", _lineNo);
+                }
+            }
             
-            ch = lineText.charAt(p);
-            
-            // 특정 상황을 나타내는 문자 뒤는 화이트 스페이스가 옮
-            
-            // 새로운 키 (Object)
-            if( nextSpace && ch == ':' )
+            // 다음 문자까지 스킵
+            p = this.skipSpace(lineText, p + 1);
+            curIndent = p;
+        }
+        // 신규
+        else if( _curToken == null || curIndent <= prevIndent )
+        {
+            _curToken = new YMLToken(_curToken == null ? null : _curToken.parent(), curIndent);
+        }
+        // 자식 혹은 값의 연장
+        else if( _curToken != null )
+        {
+            if( _curToken.isValueType() )
             {
                 //
             }
-            else if( nextSpace && ch == '-' )
+        }
+        
+        boolean prevSpace = true;
+        int vStart = curIndent; // 값의 시작 위치
+        
+        while( p < lineText.length() )
+        {
+            ch = lineText.charAt(p);
+            
+            // 주석. 이후 문자는 무시함
+            if( ch == '#' && prevSpace )
+            {
+                // TODO 현재 처리 중인 토큰을 클로즈 해야 하나?
+                lineText.substring(vStart, p).trim();
+                break;
+            }
+            
+            // 다음 문자가 공백(라인 끝 포함)인지 여부
+            boolean nextSpace = this.isWhitespace(lineText, p + 1);
+            
+            // 새로운 객체. 현재 토큰이 이 값을 수용할 수 있는지 판단해야 함.
+            if( ch == ':' && nextSpace )
+            {
+                if( _curToken != null )
+                {
+                    
+                }
+                
+                _curToken = new YMLToken(_curToken, curIndent)
+                    .setKey(lineText.substring(curIndent, p).trim())
+                ;
+            }
+            // 주석 (제일 뒤에 나오는 것만 따져야 함)
+            else if( ch == '#' )
             {
                 //
             }
@@ -184,35 +197,16 @@ public class YMLParser
                 //
             }
             
+            prevSpace = Character.isWhitespace(ch);
+            
             p += 1;
         }
-        
-        // 
-        // 0: not defined
-        // 1: key-value
-        int prevToken = 0;
-        int prevIndent = 0;
-        
-        // prevIndent < indent --> 새로운 key 등장 필요
-        
-        // 주석 --> # ~
-        // 새로운 키의 시작 --> foo:
-        // 목록 --> -
-        // 문자열만 존재
-        
-        Token state = null;
-        
-        // 스택에 아무것도 없는 경우는 처음 객체가 필요한 경우임.
-        if( _stack.isEmpty() )
-        {
-            
-        }
-        
     }
     
     public JSONObject getResult()
     {
-        return _result;
+        // TODO implementation...
+        return null;
     }
 
     public static JSONObject toJsonObject(String ymlText) throws Exception
