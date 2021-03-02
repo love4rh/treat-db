@@ -58,8 +58,10 @@ public class YMLParser
     public YMLParser()
     {
         _lineNo = 0;
-        _rootToken = null;
         _curToken = null;
+        
+        // 여러 묶음이 들어 갈 수 있으므로 MAPPING을 루트 토큰의 타입을 설정함
+        _rootToken = new YMLToken(null, 0).setType(Type.MAPPING);
     }
     
     // p에 해당하는 문자가 Whitespace인지 여부 반환.
@@ -88,75 +90,40 @@ public class YMLParser
             if( _curToken != null )
             {
                 // TODO 현재 처리 중인 토큰 정리
+                _curToken.rollUp(0);
             }
             _curToken = null;
             return;
         }
 
         int p = skipSpace(lineText, 0);
-
         int curIndent = p;
+        
+        // 값을 그냥 추가해야 하는 경우인지 체크해서 처리했다면 끝!
+        if( _curToken != null && _curToken.checkAddValue(lineText, curIndent) )
+            return;
 
         // 빈 문자열이거나 화이트 스페이스만 있는 문자열임
         if( p >= lineText.length() )
-        {
-            if( _curToken != null )
-            {
-                switch( _curToken.type() )
-                {
-                case MULTILINE: // 멀티라인 문자열 (|)
-                    _curToken.addValue("\n");
-                    break;
-                case VALUE: // 기본값, 멀티라인 문자열 (멀티 싱글라인 >)
-                    _curToken.addValue(" ");
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            // 이외의 경우는 특별히 취해야 할 액션 없음.
             return;
-        }
-        
-        char ch = lineText.charAt(p);
-        int prevIndent = _curToken == null ? 0 : _curToken.indent();
 
-        // 목록 원소 (자식)
-        if( curIndent >= prevIndent && ch == '-' && this.isWhitespace(lineText, p + 1) )
-        {
-            // 최상의 객체가 없는 경우는 최상위 객체는 목록임
-            if( _curToken == null )
-            {
-                _curToken = new YMLToken(null, curIndent).setType(Type.LIST);
-            }
-            else
-            {
-                // 현재 처리 중인 토큰이 목록 형태가 아니라면 오류임.
-                if( !_curToken.canBeType(Type.LIST, curIndent) )
-                {
-                    throw new ParseException("Invalid YML", _lineNo);
-                }
-            }
-            
-            // 다음 문자까지 스킵
-            p = this.skipSpace(lineText, p + 1);
-            curIndent = p;
-        }
-        // 신규
-        else if( _curToken == null || curIndent <= prevIndent )
-        {
-            _curToken = new YMLToken(_curToken == null ? null : _curToken.parent(), curIndent);
-        }
-        // 자식 혹은 값의 연장
-        else if( _curToken != null )
-        {
-            if( _curToken.isValueType() )
-            {
-                //
-            }
-        }
+        char ch = lineText.charAt(p);
         
+        // 주석 라인임 --> 무시
+        if( '#' == ch )
+            return;
+
+        // 리스트 가능 여부
+        boolean maybeList = ch == '-' && isWhitespace(lineText, p + 1);
+
+        if( _curToken == null )
+        {
+            _curToken = new YMLToken(_rootToken, curIndent);
+
+            if( maybeList )
+                _curToken.setType(Type.LIST);
+        }
+
         boolean prevSpace = true;
         int vStart = curIndent; // 값의 시작 위치
         

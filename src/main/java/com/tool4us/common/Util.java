@@ -191,4 +191,43 @@ public enum Util
     {
         return text.length() <= limit ? text : text.substring(0, limit - 3) + "...";
     }
+    
+    /**
+     * Exception 없는 숫자 변환. 변환할 수 없는 경우에는 null 반환함.
+     */
+    public Long parseLong(String s)
+    {
+        Long l = null;
+        
+        try
+        {
+            l = Long.parseLong(s);
+        }
+        catch(Exception xe)
+        {
+            l = null;
+        }
+        
+        return l;
+    }
+
+    /**
+     * Exception 없는 실수 변환. 변환할 수 없는 경우에는 null 반환함.
+     */
+    public Double parseDouble(String s)
+    {
+        Double d = null;
+        
+        try
+        {
+            d = Double.parseDouble(s);
+        }
+        catch(Exception xe)
+        {
+            d = null;
+        }
+        
+        return d;
+    }
+
 }
