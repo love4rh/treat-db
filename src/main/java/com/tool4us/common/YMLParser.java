@@ -67,7 +67,7 @@ public class YMLParser
     // p에 해당하는 문자가 Whitespace인지 여부 반환.
     public boolean isWhitespace(final String text, int p)
     {
-        return p <= text.length() || Character.isWhitespace(text.charAt(p));
+        return p < 0 || p >= text.length() || Character.isWhitespace(text.charAt(p));
     }
 
     // start부터 시작하여 Whitespace가 아닌 위치를 찾아 반환.
@@ -77,6 +77,74 @@ public class YMLParser
             start += 1;
         
         return start;
+    }
+    
+    /**
+     * 다음 토큰을 추출하여 반환함.
+     * @param text  파싱할 문자열
+     * @param begin 시작 위치
+     * @return Object[] { tokenType, 현재까지 처리한  위치, 부가 정보 }
+     */
+    public Object[] extractNextToken(final String text, int begin)
+    {
+        Type tokenType = Type.UNKNOWN;
+        
+        int p = begin;
+        StringBuilder sb = new StringBuilder();
+
+        boolean prevSpace = isWhitespace(text, p - 1);
+        
+        while( p < text.length() && tokenType == Type.UNKNOWN )
+        {
+            char ch = text.charAt(p);
+            boolean nextSpace = isWhitespace(text, p + 1);
+
+            // 주석. 이후 문자는 무시함
+            if( '#' == ch && prevSpace )
+            {
+                tokenType = Type.COMMENT;
+                p = text.length();
+            }
+            else if( nextSpace )
+            {
+                switch( ch )
+                {
+                case '-':
+                    tokenType = Type.LIST;
+                    break;
+                case ':':
+                    tokenType = Type.KEY;
+                    break;
+                case '>':
+                    tokenType = Type.SINGLELINE;
+                    break;
+                case '|':
+                    tokenType = Type.MULTILINE;
+                    break;
+                default:
+                    break;
+                }
+
+                if( tokenType != Type.UNKNOWN )
+                {
+                    p = skipSpace(text, p + 1);
+                }
+            }
+            
+            if( tokenType == Type.UNKNOWN )
+            {
+                sb.append(ch);
+                prevSpace = Character.isWhitespace(ch);
+                p += 1;
+            }
+        }
+        
+        String infoValue = sb.toString();
+
+        if( !infoValue.isEmpty() && tokenType == Type.UNKNOWN )
+            tokenType = Type.VALUE;
+
+        return new Object[] { tokenType, p, infoValue };
     }
 
     public void pushLineText(final String lineText) throws ParseException
@@ -113,60 +181,17 @@ public class YMLParser
         if( '#' == ch )
             return;
 
-        // 리스트 가능 여부
-        boolean maybeList = ch == '-' && isWhitespace(lineText, p + 1);
-
-        if( _curToken == null )
-        {
-            _curToken = new YMLToken(_rootToken, curIndent);
-
-            if( maybeList )
-                _curToken.setType(Type.LIST);
-        }
-
-        boolean prevSpace = true;
-        int vStart = curIndent; // 값의 시작 위치
-        
         while( p < lineText.length() )
         {
-            ch = lineText.charAt(p);
+            Object[] tokenInfo = this.extractNextToken(lineText, p);
+            Type tokenType = (Type) tokenInfo[0];
+            int np = (int) tokenInfo[1];
+            String infoValue = (String) tokenInfo[2];
             
-            // 주석. 이후 문자는 무시함
-            if( ch == '#' && prevSpace )
-            {
-                // TODO 현재 처리 중인 토큰을 클로즈 해야 하나?
-                lineText.substring(vStart, p).trim();
-                break;
-            }
+            System.out.println("Indent: " + curIndent + ", Type: " + tokenType
+                + ", Next Position: " + np + ", value: [" + infoValue + "]");
             
-            // 다음 문자가 공백(라인 끝 포함)인지 여부
-            boolean nextSpace = this.isWhitespace(lineText, p + 1);
-            
-            // 새로운 객체. 현재 토큰이 이 값을 수용할 수 있는지 판단해야 함.
-            if( ch == ':' && nextSpace )
-            {
-                if( _curToken != null )
-                {
-                    
-                }
-                
-                _curToken = new YMLToken(_curToken, curIndent)
-                    .setKey(lineText.substring(curIndent, p).trim())
-                ;
-            }
-            // 주석 (제일 뒤에 나오는 것만 따져야 함)
-            else if( ch == '#' )
-            {
-                //
-            }
-            else
-            {
-                //
-            }
-            
-            prevSpace = Character.isWhitespace(ch);
-            
-            p += 1;
+            p = np;
         }
     }
     
@@ -202,10 +227,13 @@ public class YMLParser
         String[] testYml = new String[]
         {
               "---"
-            , "te,:st: aaa: "
-            , ""
+            , "map1: # 코멘트"
+            , "# 라인 코멘트"
+            , "  child0:    "
+            , "  child1: ab#c"
+            , "  child2: e-fc"
             , "test2:"
-            , "- "
+            , "- - - "
             , "  - aaa"
             , "    - dfsa"
         };

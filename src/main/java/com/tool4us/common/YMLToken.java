@@ -17,11 +17,17 @@ public class YMLToken
     public static enum Type
     {
         UNKNOWN,    // 아직 모
+
         VALUE,      // 단순 값
         SINGLELINE, // 단일 라인 문자
         MULTILINE,  // 여러 라인 문자 
-        LIST,       // 목록
-        MAPPING     // 매핑(객체)
+        MAPPING,    // 매핑(객체)
+
+        LIST,       // 목록 원소
+        KEY,        // 키
+        QUOTES,     // 싱글 쿼테이션 시작
+        QUOTED,     // 더블 쿼테이션 시작
+        COMMENT     // 코멘트
     }
     
     private YMLToken    _parent = null;
