@@ -61,7 +61,7 @@ public class YMLParser
         _curToken = null;
         
         // 여러 묶음이 들어 갈 수 있으므로 MAPPING을 루트 토큰의 타입을 설정함
-        _rootToken = new YMLToken(null, 0).setType(Type.MAPPING);
+        _rootToken = new YMLToken(null, -1).setType(Type.LIST);
     }
     
     // p에 해당하는 문자가 Whitespace인지 여부 반환.
@@ -85,7 +85,7 @@ public class YMLParser
      * @param begin 시작 위치
      * @return Object[] { tokenType, 현재까지 처리한  위치, 부가 정보 }
      */
-    public Object[] extractNextToken(final String text, int begin)
+    public Object[] extractNextToken(final String text, int begin, boolean keyOn, boolean listOn)
     {
         Type tokenType = Type.UNKNOWN;
         
@@ -107,27 +107,28 @@ public class YMLParser
             }
             else if( nextSpace )
             {
-                switch( ch )
+                if( !listOn && '-' == ch )
                 {
-                case '-':
                     tokenType = Type.LIST;
-                    break;
-                case ':':
-                    tokenType = Type.KEY;
-                    break;
-                case '>':
+                }
+                else if( ':' == ch )
+                {
+                    // keyOn이 true이면 오류인데 호출한 쪽에서 처리하게 하기 위하여 KEY를 할당하였음.
+                    tokenType = keyOn ? Type.KEY : Type.KEY;
+                }
+                else if( '>' == ch )
+                {
                     tokenType = Type.SINGLELINE;
-                    break;
-                case '|':
+                }
+                else if( '|' == ch )
+                {
                     tokenType = Type.MULTILINE;
-                    break;
-                default:
-                    break;
                 }
 
                 if( tokenType != Type.UNKNOWN )
                 {
                     p = skipSpace(text, p + 1);
+                    break;
                 }
             }
             
@@ -180,25 +181,79 @@ public class YMLParser
         // 주석 라인임 --> 무시
         if( '#' == ch )
             return;
+        
+        // KEY는 한 라인에 한 개
+        // indent가 작아지면 상위 객체로 이동
+        boolean keyOn = false;
+        boolean listOn = false;
 
         while( p < lineText.length() )
         {
-            Object[] tokenInfo = this.extractNextToken(lineText, p);
-            Type tokenType = (Type) tokenInfo[0];
+            Object[] tokenInfo = extractNextToken(lineText, p, keyOn, listOn);
+
             int np = (int) tokenInfo[1];
+            Type tokenType = (Type) tokenInfo[0];
             String infoValue = (String) tokenInfo[2];
+
+            if( tokenType == Type.KEY )
+            {
+                if( keyOn )
+                {
+                    throw new ParseException("mapping value not allowed here", _lineNo);
+                }
+
+                keyOn = true;
+                
+                // Indent가 작아지면 새로운 항목이 시작됨을 의미함 --> 현재까지 처리된 내용 정리 필요
+                if( _curToken != null && curIndent <= _curToken.indent() )
+                {
+                    YMLToken parentToken = _curToken.parent();
+                    _curToken = _curToken.rollUp(parentToken.indent());
+                    if( _curToken == null )
+                        throw new ParseException("invalid indent found", _lineNo);
+                }
+
+                _curToken = new YMLToken(_curToken == null ? _rootToken : _curToken, listOn ? p : curIndent).setKey(infoValue);
+            }
+            else if( tokenType == Type.LIST )
+            {
+                listOn = true;
+                
+                if( _curToken == null || _curToken == _rootToken )
+                    _curToken = new YMLToken(_rootToken, curIndent).setType(Type.LIST);
+
+                // 현재 토큰이 있고 LIST 형태라면 값 토큰을 하나 추가해서 이후 값을 받을 수 있도록 해야 함.
+                if( _curToken != null )
+                {
+                    if( _curToken.isUndefinedValue() )
+                        _curToken.setType(Type.LIST);
+
+                    if( _curToken.isType(Type.LIST) )
+                        _curToken = new YMLToken(_curToken, curIndent);
+                }
+                else
+                    _curToken.setType(Type.LIST);
+            }
+            else if( tokenType == Type.COMMENT )
+            {
+                // nothing to do
+            }
+            else if( _curToken != null )
+            {
+                _curToken.addValue(infoValue);
+            }
             
-            System.out.println("Indent: " + curIndent + ", Type: " + tokenType
+            System.out.println(_lineNo + ", Indent: " + curIndent + ", Type: " + tokenType
                 + ", Next Position: " + np + ", value: [" + infoValue + "]");
             
             p = np;
         }
     }
     
-    public JSONObject getResult()
+    public YMLToken getResult()
     {
         // TODO implementation...
-        return null;
+        return _rootToken;
     }
 
     public static JSONObject toJsonObject(String ymlText) throws Exception
@@ -216,7 +271,8 @@ public class YMLParser
 
         in.close();
 
-        return psr.getResult();
+        // return psr.getResult();
+        return null;
     }
     
     
@@ -233,9 +289,14 @@ public class YMLParser
             , "  child1: ab#c"
             , "  child2: e-fc"
             , "test2:"
-            , "- - - "
+            , "- bb - - "
             , "  - aaa"
             , "    - dfsa"
+            , "- id: 123"
+            , "  name: hong"
+            , "test3:"
+            , " - a1"
+            , " - a2"
         };
         
         try
@@ -244,6 +305,8 @@ public class YMLParser
             {
                 yml.pushLineText(lineText);
             }
+            
+            yml.getResult();
         }
         catch(Exception xe)
         {

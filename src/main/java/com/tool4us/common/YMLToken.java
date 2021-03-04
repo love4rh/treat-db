@@ -5,6 +5,9 @@ import org.json.JSONObject;
 
 import static com.tool4us.common.Util.UT;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 
 /**
@@ -16,8 +19,6 @@ public class YMLToken
 {
     public static enum Type
     {
-        UNKNOWN,    // 아직 모
-
         VALUE,      // 단순 값
         SINGLELINE, // 단일 라인 문자
         MULTILINE,  // 여러 라인 문자 
@@ -25,9 +26,13 @@ public class YMLToken
 
         LIST,       // 목록 원소
         KEY,        // 키
+
         QUOTES,     // 싱글 쿼테이션 시작
         QUOTED,     // 더블 쿼테이션 시작
-        COMMENT     // 코멘트
+        COMMENT,    // 코멘트
+        
+        ERROR,      // 파싱 오류가 있음을 알리기 위한 타입
+        UNKNOWN     // 알 수 없음
     }
     
     private YMLToken    _parent = null;
@@ -52,6 +57,8 @@ public class YMLToken
     
     private JSONObject      _mapValue;
     private JSONArray       _lstValue;
+    
+    private List<YMLToken>  _children = new ArrayList<YMLToken>();
 
 
     public YMLToken(YMLToken parent, int indent)
@@ -60,6 +67,9 @@ public class YMLToken
         _indent = indent;
         _valueIndent = -1;
         _sbValue = new StringBuilder();
+        
+        if( parent != null )
+            parent._children.add(this);
     }
     
     public YMLToken parent()
@@ -135,6 +145,15 @@ public class YMLToken
     {
         return _type == Type.MULTILINE || _type == Type.SINGLELINE;
     }
+    
+    /**
+     * 가져야 할 값이 어떤 형태인지 정해졌는지 여부 반환
+     */
+    public boolean isUndefinedValue()
+    {
+        // TODO LIST 형태는 값이 정해진 것으로 보아야 하나?
+        return _type == Type.UNKNOWN || _type == Type.KEY;
+    }
 
     public String key()
     {
@@ -186,6 +205,9 @@ public class YMLToken
      */
     public YMLToken rollUp(int indent)
     {
+        if( _parent == null )
+            return null;
+
         Object value = null;
         
         if( isType(Type.LIST) )
@@ -231,7 +253,7 @@ public class YMLToken
     }
 
     private YMLToken _rollUp(int indent, String cKey, Object value)
-    {
+    {   
         // 값 설정
         if( isType(Type.LIST) )
         {
@@ -242,6 +264,6 @@ public class YMLToken
             _mapValue.put(cKey, value);
         }
 
-        return _indent <= indent ? this : rollUp(indent);
+        return _indent == indent ? this : rollUp(indent);
     }
 }
