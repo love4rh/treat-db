@@ -208,7 +208,14 @@ public class YMLParser
                 if( _curToken != null && curIndent <= _curToken.indent() )
                 {
                     YMLToken parentToken = _curToken.parent();
+                    
+                    if( !parentToken.canBeType(Type.MAPPING, parentToken.indent()) )
+                        throw new ParseException("mapping value not allowed here", _lineNo);
+
+                    parentToken.setType(Type.MAPPING);
+
                     _curToken = _curToken.rollUp(parentToken.indent());
+
                     if( _curToken == null )
                         throw new ParseException("invalid indent found", _lineNo);
                 }

@@ -117,7 +117,8 @@ public class YMLToken
         }
         else if( _type == Type.MAPPING )
         {
-            _mapValue = new JSONObject();
+            if( _mapValue == null )
+                _mapValue = new JSONObject();
         }
         
         return this;
@@ -168,7 +169,11 @@ public class YMLToken
     
     public YMLToken addValue(String value)
     {
+        if( _type == Type.UNKNOWN )
+            this.setType(Type.VALUE);
+
         _sbValue.append(value);
+
         return this;
     }
     
@@ -247,7 +252,7 @@ public class YMLToken
                         value = s;
                 }
             }
-        } 
+        }
 
         return _parent._rollUp(indent, _key, value);
     }
@@ -259,7 +264,7 @@ public class YMLToken
         {
             _lstValue.put(value);
         }
-        else if( cKey != null )
+        else if( cKey != null && value != null )
         {
             _mapValue.put(cKey, value);
         }
