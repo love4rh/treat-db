@@ -39,7 +39,7 @@ public class YMLToken
     
     private int         _indent = 0;
     
-    private int         _valueIndent = 0;
+    private int         _valueIndent = -1;
 
     /**
      * 0: 아직 모름
@@ -69,7 +69,18 @@ public class YMLToken
         _sbValue = new StringBuilder();
         
         if( parent != null )
+        {
+            parent.setValueIndent(indent);
             parent._children.add(this);
+        }
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("KEY:{%s} TYPE:{%s} INDENT:{%d} VINDENT:{%d} VALUE:{%s} CHILD:{%d}"
+            , _key, _type, _indent, _valueIndent, _sbValue.toString(), _children.size()
+        );
     }
     
     public YMLToken parent()
@@ -171,6 +182,9 @@ public class YMLToken
     {
         if( _type == Type.UNKNOWN )
             this.setType(Type.VALUE);
+        
+        if( !_sbValue.toString().isEmpty() )
+            _sbValue.append(" ");
 
         _sbValue.append(value);
 
@@ -218,6 +232,14 @@ public class YMLToken
         if( isType(Type.LIST) )
         {
             value = _lstValue;
+            
+            /*
+            if( _key != null && !_key.isEmpty() )
+            {
+                JSONObject obj = new JSONObject();
+                obj.put(_key, value);
+                value = obj;
+            } // */
         }
         else if( isType(Type.MAPPING) )
         {
@@ -264,11 +286,39 @@ public class YMLToken
         {
             _lstValue.put(value);
         }
-        else if( cKey != null && value != null )
-        {
-            _mapValue.put(cKey, value);
+        else if( cKey != null )
+        {   
+            _mapValue.put(cKey, value != null ? value : "$null$"); // null을 표현하고 싶은데 JSONObject에서 미지원이네...
         }
 
         return _indent == indent ? this : rollUp(indent);
+    }
+    
+    public YMLToken findParent(int indent)
+    {
+        if( _parent == null )
+            return null;
+        
+        return _indent == indent ? this : _parent.findParent(indent);
+    }
+    
+    public String toJson()
+    {
+        Object value = null;
+        
+        if( isType(Type.LIST) )
+        {
+            value = _lstValue;
+        }
+        else if( isType(Type.MAPPING) )
+        {
+            value = _mapValue;
+        }
+        else if( isValueType() )
+        {
+            value = _sbValue.toString();
+        }
+
+        return value == null ? null : value.toString();
     }
 }
