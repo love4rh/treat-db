@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONObject;
 
@@ -13,7 +15,8 @@ import com.tool4us.common.YMLToken.Type;
 
 /**
  * Simple YML parser.
- * YML의 문법 중 다음만 지원함. 프로그램 실행 옵션을 YML 형태로 지정 시 사용 
+ * 프로그램 실행 옵션을 YML 형태로 지정하여 사용하기 위한 용도로 만들었음.
+ * YML의 문법 중 다음만 지원함. 
  * 
  * # this is comment.
  * name: kim
@@ -53,6 +56,8 @@ public class YMLParser
     
     // 현재 처리 중인 토큰
     private YMLToken    _curToken = null;
+    
+    private List<YMLToken>      _documents = new ArrayList<YMLToken>();
 
     
     public YMLParser()
@@ -160,8 +165,11 @@ public class YMLParser
             if( _curToken != null )
             {
                 _curToken.rollUp(_rootToken.indent());
+                
+                // 처리 중인 토큰은 다큐멘트 목록에 추가하고,
+                _documents.add(_rootToken);
 
-                // TODO _rootToken을 넣어 두어야 함.
+                // 새롭게 시작
                 _rootToken = new YMLToken(null, -1).setKey("$ROOT$");
             }
             _curToken = null;
@@ -187,8 +195,7 @@ public class YMLParser
         
         // KEY는 한 라인에 한 개
         // indent가 작아지면 상위 객체로 이동
-        boolean keyOn = false;
-        boolean listOn = false;
+        boolean keyOn = false, listOn = false, multiLine = false;
 
         while( p < lineText.length() )
         {
@@ -202,13 +209,19 @@ public class YMLParser
             
             System.out.println(_lineNo + ", Indent: " + curIndent + ", Type: " + tokenType
                 + ", Next Position: " + np + ", value: [" + infoValue + "]");
+            
+            if( tokenType == Type.COMMENT )
+            {
+                p = np;
+                continue;
+            }
+            else if( multiLine )
+                throw makeException("expected a comment or a line break", _lineNo, p);
 
             if( tokenType == Type.KEY )
             {
-                if( keyOn )
-                {
-                    throw new ParseException("mapping value not allowed here at [" + _lineNo + "]", _lineNo);
-                }
+                if( keyOn || _rootToken.isType(Type.VALUE) )
+                    throw makeException("mapping value not allowed here", _lineNo, p);
                 
                 if( _rootToken.isType(Type.UNKNOWN) )
                     _rootToken.setType(Type.MAPPING);
@@ -224,11 +237,15 @@ public class YMLParser
                     YMLToken tokenAtIndent = findToken(curIndent);
                     YMLToken parentToken = tokenAtIndent.parent();
                     
+                    // 목록의 원소가 목록의 키명칭과 같은 indent로 정의된 경우로 이 경우는 한 단계 더 올라가야 실제 상위 객체
+                    if( tokenAtIndent.isType(Type.LIST) && parentToken.indent() == tokenAtIndent.indent() )
+                        parentToken = parentToken.parent();
+
                     if( parentToken.valueIndent() != -1 && parentToken.valueIndent() != curIndent )
-                        throw new ParseException("invalid indent found at [" + _lineNo + "]", _lineNo);
+                        throw makeException("invalid indent found", _lineNo, p);
                     
                     if( !parentToken.canBeType(Type.MAPPING, parentToken.indent()) )
-                        throw new ParseException("mapping value not allowed here at [" + _lineNo + "]", _lineNo);
+                        throw makeException("mapping value not allowed here", _lineNo, p);
 
                     parentToken.setType(Type.MAPPING);
                     _curToken = rollUp(parentToken.indent());
@@ -265,24 +282,47 @@ public class YMLParser
                         _curToken = new YMLToken(_curToken, curIndent);
                 }
             }
-            else if( tokenType == Type.COMMENT )
+            else if( tokenType == Type.MULTILINE || tokenType == Type.SINGLELINE )
             {
-                // nothing to do
+                if( _curToken == null )
+                    throw makeException("unexpected token", _lineNo, p);
+                    
+                if( !_curToken.canBeType(tokenType, curIndent) )
+                    throw makeException("mapping value not allowed here", _lineNo, p);
+                
+                _curToken.setType(tokenType);
+                
+                multiLine = true;
             }
             else if( _curToken != null )
             {
+                if( _curToken.valueIndent() == -1 )
+                    _curToken.setValueIndent(curIndent);
+                else if( _curToken.valueIndent() > curIndent )
+                    throw makeException("invalid value indent", _lineNo, p);
+
                 _curToken.addValue(infoValue);
+            }
+            else if( tokenType == Type.VALUE && _rootToken.isType(Type.UNKNOWN) )
+            {
+                _curToken = _rootToken;
+                _rootToken.setType(tokenType).addValue(infoValue);
             }
 
             p = np;
         }
     }
     
+    private ParseException makeException(String message, int line, int column)
+    {
+        return new ParseException(message + " at [" + line + ", " + (column + 1) + "]", line);
+    }
+    
     private YMLToken rollUp(int indent) throws ParseException
     {
         _curToken = _curToken.rollUp(indent);
         if( _curToken == null )
-            throw new ParseException("invalid indent found at [" + _lineNo + "]", _lineNo);
+            throw makeException("invalid indent found", _lineNo, -1);
 
         return _curToken;
     }
@@ -292,23 +332,40 @@ public class YMLParser
         YMLToken token = _curToken.findParent(indent);
         
         if( token == null )
-            throw new ParseException("invalid indent found at [" + _lineNo + "]", _lineNo);
+            throw makeException("invalid indent found", _lineNo, -1);
         
         return token;
     }
     
-    public YMLToken getResult()
+    public int countOfDocument()
+    {
+        return _documents.size();
+    }
+    
+    public void finish()
     {
         if( _curToken != null )
         {
             // 정리하는 작업을 해야 함.
             _curToken.rollUp(_rootToken.indent());
             _curToken = null;
+            
+            _documents.add(_rootToken);
+            
+            // 다시 할 경우를 대비해서 초기화 함.
+            _rootToken = new YMLToken(null, -1).setKey("$ROOT$");
         }
+    }
+    
+    public YMLToken getDocument(int index)
+    {
+        finish();
         
-        System.out.println(_rootToken.toJson());
+        YMLToken token = _documents.get(index);
 
-        return _rootToken;
+        System.out.println(token.toJson());
+
+        return token;
     }
 
     public static JSONObject toJsonObject(String ymlText) throws Exception
@@ -343,24 +400,37 @@ public class YMLParser
 //            , "  child0:    "
 //            , "  child1: ab#c"
 //            , "  child2: e-fc"
-            , "test0:"
-            , "test1:"
-            , "  id: 123"
-            , "  name: hong"
-            , "  desc: "
-            , "  phone: 123"
-            , "test2:"
-            , "  - aaa"
-            , "    - dfsa"
-            , "  - id: 123"
-            , "    name: hong"
-            , "test3:"
-            , " - a1"
-            , " - a2"
+//            , "test0:"
+//            , "test1:"
+//            , "  id: 123"
+//            , "  name: hong"
+//            , "  desc: "
+//            , "  phone: 123"
+//            , "test2:"
+//            , "  - aaa"
+//            , "    - dfsa"
+//            , "  - id: 123"
+//            , "    name: hong"
+//            , "test3:"
+//            , " - a1"
+//            , " - a2"
             , "test4:"
             , "- - - a - -"
-            , "     - b"
+            , "      - b"
             , "  - "
+            , "test5: |"
+            , "  abc"
+            , "  def"
+            , "  "
+            , "test6:"
+            , "  - > "
+            , "   ghijk"
+            , "   lmnopqr sudr"
+            , "  - ddd"
+//            , "- a"
+//            , "- b"
+//            , "- abc"
+//            , "dfd"
         };
         
         try
@@ -370,7 +440,8 @@ public class YMLParser
                 yml.pushLineText(lineText);
             }
             
-            yml.getResult();
+            yml.finish();
+            yml.getDocument(0);
         }
         catch(Exception xe)
         {

@@ -58,6 +58,7 @@ public class YMLToken
     private JSONObject      _mapValue;
     private JSONArray       _lstValue;
     
+    // 디버깅 용도로 추가한 멤버임. 없어도 문제 없음.
     private List<YMLToken>  _children = new ArrayList<YMLToken>();
 
 
@@ -98,18 +99,12 @@ public class YMLToken
      */
     public int valueIndent()
     {
-        return _valueIndent == -1 ? _indent : _valueIndent;
+        return _valueIndent;
     }
     
-    public boolean setValueIndent(int indent)
+    public void setValueIndent(int indent)
     {
-        if( _valueIndent == -1 )
-        {
-            _valueIndent = indent;
-            return true;
-        }
-
-        return false;
+        _valueIndent = indent;
     }
 
     public Type type()
@@ -284,7 +279,15 @@ public class YMLToken
         // 값 설정
         if( isType(Type.LIST) )
         {
-            _lstValue.put(value);
+            if( _indent == -1 && value instanceof JSONArray )
+                _lstValue = (JSONArray) value;
+            else
+                _lstValue.put(value);
+        }
+        else if( isType(Type.UNKNOWN) )
+        {
+            _type = Type.VALUE;;
+            _sbValue.append(value);
         }
         else if( cKey != null )
         {   
@@ -301,7 +304,7 @@ public class YMLToken
         
         return _indent == indent ? this : _parent.findParent(indent);
     }
-    
+     
     public String toJson()
     {
         Object value = null;
