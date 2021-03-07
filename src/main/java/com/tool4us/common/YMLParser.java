@@ -50,6 +50,8 @@ import com.tool4us.common.YMLToken.Type;
  */
 public class YMLParser
 {
+    private static char ESCAPE_CHAR = '\\';
+    
     private int         _lineNo = 0;
     
     private YMLToken    _rootToken = null;
@@ -58,6 +60,9 @@ public class YMLParser
     private YMLToken    _curToken = null;
     
     private List<YMLToken>      _documents = new ArrayList<YMLToken>();
+    
+    // 따옴표 진행 중 여부.
+    private Type        _quoteOn = Type.UNKNOWN;
 
     
     public YMLParser()
@@ -89,28 +94,49 @@ public class YMLParser
      * @param begin 시작 위치
      * @return Object[] { tokenType, 현재까지 처리한  위치, 부가 정보 }
      */
-    public Object[] extractNextToken(final String text, int begin)
+    private Object[] extractNextToken(final String text, int begin)
     {
         Type tokenType = Type.UNKNOWN;
         
         int p = begin;
         StringBuilder sb = new StringBuilder();
 
-        boolean valueOn = false;
+        boolean valueOn = false; // 값이 할당되었는지 여부
+        
+        char ch = p <= 0 ? ' ' : text.charAt(p - 1);
         boolean prevSpace = isWhitespace(text, p - 1);
         
         while( p < text.length() && tokenType == Type.UNKNOWN )
         {
-            char ch = text.charAt(p);
-            boolean nextSpace = isWhitespace(text, p + 1);
+            char pch = ch;
+            
+            ch = text.charAt(p);
 
+            if( pch == ESCAPE_CHAR )
+            {
+                switch( ch )
+                {
+                case 'n': ch = '\n'; break;
+                case 't': ch = '\t'; break;
+                default:
+                    break;
+                }
+            }
+            else if( ch == ESCAPE_CHAR )
+                continue;
+            
             // 주석. 이후 문자는 무시함
             if( '#' == ch && prevSpace )
             {
                 tokenType = Type.COMMENT;
                 p = text.length();
             }
-            else if( nextSpace )
+            else if( !valueOn && pch != ESCAPE_CHAR && (ch == '"' || ch == '\'') )
+            {
+                tokenType = ch == '"' ? Type.QUOTED : Type.QUOTES;
+                p += 1;
+            }
+            else if( isWhitespace(text, p + 1) ) // 다음 문자가 스페이스라면
             {
                 if( '-' == ch && !valueOn )
                 {
@@ -153,11 +179,67 @@ public class YMLParser
 
         return new Object[] { tokenType, p, infoValue };
     }
+    
+    private Object[] doingQuote(final String text, int begin, boolean singleQuote) throws ParseException
+    {
+        char ending = singleQuote ? '\'' : '"';
+ 
+        int p = begin;
+        boolean closed = false;
+        StringBuilder sb = new StringBuilder();
+
+        char ch = '\0';
+        while( p < text.length() && !closed )
+        {
+            char pch = ch;
+            ch = text.charAt(p);
+            
+            if( pch == ESCAPE_CHAR )
+            {
+                switch( ch )
+                {
+                case 'n': ch = '\n'; break;
+                case 't': ch = '\t'; break;
+                default:
+                    break;
+                }
+            }
+            else if( ch == ending )
+            {
+                p = skipSpace(text, p + 1);
+                if( p < text.length() && text.charAt(p) != '#' )
+                    throw makeException("only quotation mark expected", _lineNo, -1);
+
+                closed = true;
+            }
+            else if( ch == ESCAPE_CHAR )
+                continue;
+            else
+                sb.append(ch);
+            
+            p += 1;
+        }
+        
+        return new Object[] { sb.toString(), closed };
+    }
 
     public void pushLineText(final String lineText) throws ParseException
     {
         _lineNo += 1;
         
+        // 따옴표 처리 중이라면
+        if( _quoteOn != Type.UNKNOWN && _curToken != null )
+        {
+            Object[] r = doingQuote(lineText, 0, _quoteOn == Type.QUOTES);
+            
+            _curToken.addValue((String) r[0]);
+            
+            if( (Boolean) r[1] )
+                _quoteOn = Type.UNKNOWN;
+            
+            return;
+        }
+
         // --- 고려 해야 함.
         if( lineText.startsWith("---") )
         {
@@ -207,8 +289,9 @@ public class YMLParser
             
             curIndent = p;
             
-            System.out.println(_lineNo + ", Indent: " + curIndent + ", Type: " + tokenType
-                + ", Next Position: " + np + ", value: [" + infoValue + "]");
+            System.out.printf("%d: Indent: %d, Type: %s, Next Position: %d, value: [%s], LastTokenType: %s\n"
+                , _lineNo, curIndent, tokenType, np, infoValue, (_curToken == null ? "n/a" : _curToken.type())
+            );
             
             if( tokenType == Type.COMMENT )
             {
@@ -238,7 +321,7 @@ public class YMLParser
                     YMLToken parentToken = tokenAtIndent.parent();
                     
                     // 목록의 원소가 목록의 키명칭과 같은 indent로 정의된 경우로 이 경우는 한 단계 더 올라가야 실제 상위 객체
-                    if( tokenAtIndent.isType(Type.LIST) && parentToken.indent() == tokenAtIndent.indent() )
+                    if( parentToken.indent() == tokenAtIndent.indent() ) // tokenAtIndent.isType(Type.LIST) && 
                         parentToken = parentToken.parent();
 
                     if( parentToken.valueIndent() != -1 && parentToken.valueIndent() != curIndent )
@@ -285,14 +368,41 @@ public class YMLParser
             else if( tokenType == Type.MULTILINE || tokenType == Type.SINGLELINE )
             {
                 if( _curToken == null )
-                    throw makeException("unexpected token", _lineNo, p);
-                    
+                {
+                    if( !_rootToken.isType(Type.UNKNOWN) )
+                        throw makeException("unexpected token", _lineNo, p);
+                    _curToken = _rootToken;
+                }
+
                 if( !_curToken.canBeType(tokenType, curIndent) )
                     throw makeException("mapping value not allowed here", _lineNo, p);
-                
+
                 _curToken.setType(tokenType);
-                
+
                 multiLine = true;
+            }
+            else if( tokenType == Type.QUOTED || tokenType == Type.QUOTES )
+            {
+                if( _curToken == null )
+                {
+                    if( !_rootToken.isType(Type.UNKNOWN) )
+                        throw makeException("unexpected token", _lineNo, p);
+                    _curToken = _rootToken;
+                }
+
+                if( !_curToken.canBeType(Type.MULTILINE, curIndent) )
+                    throw makeException("mapping value not allowed here", _lineNo, p);
+                
+                _curToken.setType(Type.MULTILINE);
+                
+                Object[] r = doingQuote(lineText, np, tokenType == Type.QUOTES);
+                
+                _curToken.addValue((String) r[0]);
+                
+                if( !(Boolean) r[1] )
+                    _quoteOn = tokenType;
+
+                break;
             }
             else if( _curToken != null )
             {
@@ -395,25 +505,25 @@ public class YMLParser
         String[] testYml = new String[]
         {
             "---"
-//            , "map1: # 코멘트"
-//            , "# 라인 코멘트"
-//            , "  child0:    "
-//            , "  child1: ab#c"
-//            , "  child2: e-fc"
-//            , "test0:"
-//            , "test1:"
-//            , "  id: 123"
-//            , "  name: hong"
-//            , "  desc: "
-//            , "  phone: 123"
-//            , "test2:"
-//            , "  - aaa"
-//            , "    - dfsa"
-//            , "  - id: 123"
-//            , "    name: hong"
-//            , "test3:"
-//            , " - a1"
-//            , " - a2"
+            , "map1: # 코멘트"
+            , "# 라인 코멘트"
+            , "  child0:    "
+            , "  child1: ab#c"
+            , "  child2: e-fc"
+            , "test0:"
+            , "test1:"
+            , "  id: 123"
+            , "  name: hong"
+            , "  desc: "
+            , "  phone: 123"
+            , "test2:"
+            , "  - aaa"
+            , "    - dfsa"
+            , "  - id: 123"
+            , "    name: hong"
+            , "test3:"
+            , " - a1"
+            , " - a2"
             , "test4:"
             , "- - - a - -"
             , "      - b"
@@ -427,6 +537,20 @@ public class YMLParser
             , "   ghijk"
             , "   lmnopqr sudr"
             , "  - ddd"
+
+            , "quotest1: \\abf''"
+            , "quotest2: 'abc"
+            , "eef"
+            , "'"
+            , "quotest3:"
+            , "- I'm the best!"
+            , "- 'ghj'"
+            , "quotest4:"
+            
+//            , ">"
+//            , "  abc"
+//            , "  def"
+            
 //            , "- a"
 //            , "- b"
 //            , "- abc"

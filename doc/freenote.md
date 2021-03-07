@@ -13,38 +13,44 @@ https://www.convertjson.com/yaml-to-json.htm
 https://yaml-online-parser.appspot.com/
 
 ``` yaml
----
-p1:
-  p2:
-    p3: |
-      asf
-      ss
-    p4: sdf #sdfksfj # sdf
-
-test: >
-  sdfj
-  sdflsj
-
-list:
-- { a: ss, b: dfd }
-- >
-    id: 1
-    name: Johnson, Smith, and Jones Co.
-    amount: 345.33
-    Remark: Pays on time
--
-    id: 2
-    name: Sam "Mad Dog" Smith
-    amount: 993.44
-    Remark:
--
-    id: 3
-    name: Barney & Company
-    amount: 0
-    Remark: "Great to work with\nand always pays with cash."
--
-    id: 4
-    name: 'Johnson''s Automotive'
-    amount: 2344
-    Remark: 
+map1: # 코멘트
+# 라인 코멘트
+  child0:    
+  child1: ab#c
+  child2: e-fc
+test0:
+test1:
+  id: 123
+  name: hong
+  desc: 
+  phone: 123
+test2:
+  - aaa
+    - dfsa
+  - id: 123
+    name: hong
+test3:
+ - a1
+ - a2
+test4:
+- - - a - -
+      - b
+  - 
+test5: |
+  abc
+  def
+  
+test6:
+  - > 
+   ghijk
+   lmnopqr sudr
+  - ddd
+quotest1: \\abf''
+quotest2: 'abc
+eef
+'
+quotest3:
+- I'm the best!
+- 'ghj'
+quotest4:
 ```

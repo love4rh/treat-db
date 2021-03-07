@@ -179,7 +179,7 @@ public class YMLToken
             this.setType(Type.VALUE);
         
         if( !_sbValue.toString().isEmpty() )
-            _sbValue.append(" ");
+            _sbValue.append(_type == Type.MULTILINE ? '\n' : ' ');
 
         _sbValue.append(value);
 
@@ -291,7 +291,7 @@ public class YMLToken
         }
         else if( cKey != null )
         {   
-            _mapValue.put(cKey, value != null ? value : "$null$"); // null을 표현하고 싶은데 JSONObject에서 미지원이네...
+            _mapValue.put(cKey, value != null ? value : '\0'); // null을 표현하고 싶은데 JSONObject에서 미지원이네...
         }
 
         return _indent == indent ? this : rollUp(indent);
