@@ -30,28 +30,17 @@ public class YMLToken
         QUOTES,     // 싱글 쿼테이션 시작
         QUOTED,     // 더블 쿼테이션 시작
         COMMENT,    // 코멘트
-        
-        ERROR,      // 파싱 오류가 있음을 알리기 위한 타입
+    
         UNKNOWN     // 알 수 없음
     }
     
     private YMLToken    _parent = null;
     
     private int         _indent = 0;
-    
     private int         _valueIndent = -1;
 
-    /**
-     * 0: 아직 모름
-     * 1: 단순 값
-     * 2: 목록 (-)
-     * 3: 멀티라인 문자열 (|)
-     * 5: 멀티라인 문자열 (멀티 싱글라인 >) 
-     * 4: 객체
-     */
-    private Type    _type = Type.UNKNOWN;
-    
-    private String  _key = "";
+    private Type        _type = Type.UNKNOWN;
+    private String      _key = "";
     
     private StringBuilder   _sbValue;
     
@@ -72,7 +61,7 @@ public class YMLToken
         if( parent != null )
         {
             parent.setValueIndent(indent);
-            parent._children.add(this);
+            // parent._children.add(this); // for debugging
         }
     }
     
@@ -304,8 +293,8 @@ public class YMLToken
         
         return _indent == indent ? this : _parent.findParent(indent);
     }
-     
-    public String toJson()
+    
+    public Object getValueObject()
     {
         Object value = null;
         
@@ -321,6 +310,13 @@ public class YMLToken
         {
             value = _sbValue.toString();
         }
+
+        return value;
+    }
+     
+    public String toJson()
+    {
+        Object value = getValueObject();
 
         return value == null ? null : value.toString();
     }

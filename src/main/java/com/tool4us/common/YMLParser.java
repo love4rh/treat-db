@@ -7,8 +7,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.json.JSONObject;
-
 import com.tool4us.common.YMLToken.Type;
 
 
@@ -16,28 +14,23 @@ import com.tool4us.common.YMLToken.Type;
 /**
  * Simple YML parser.
  * 프로그램 실행 옵션을 YML 형태로 지정하여 사용하기 위한 용도로 만들었음.
- * YML의 문법 중 다음만 지원함. 
+ * YML의 문법 중 다음만 지원함.
  * 
- * # this is comment.
- * name: kim
- * job: designer
- * married: true
- * age: 20
- * 
- * fruit_list:
- * - apple
- * - banana
- * 
- * object:
+ * {@code
+ * # this is line comment.
+ * object: # this is in-line comment.
+ *   id: 1
  *   name: kim
- *   job: developer
+ *   
+ * list:
+ * - string1
+ * - string2
  * 
- * object_list:
+ * objectList
  * - color: red
  *   direction: left
  * - color: blue
  *   direction: right
- *
  * comment_multi_line: |
  *   Hello world.
  *   This is Kim.
@@ -45,22 +38,33 @@ import com.tool4us.common.YMLToken.Type;
  * comment_single_line: >
  *   Hello world.
  *   This is Kim.
+ * 
+ * single_quote: '
+ * This is awesome.
+ * '
+ * 
+ * double_quote: "
+ * This is awesome too.
+ * "
+ * }
+ * 
+ * 목록 및 객체를 정의하기 위한 [], {}는 지원하지 않음.
  *   
  * @author TurboK
  */
 public class YMLParser
 {
     private static char ESCAPE_CHAR = '\\';
-    
+
     private int         _lineNo = 0;
-    
+
     private YMLToken    _rootToken = null;
-    
+
     // 현재 처리 중인 토큰
     private YMLToken    _curToken = null;
     
     private List<YMLToken>      _documents = new ArrayList<YMLToken>();
-    
+
     // 따옴표 진행 중 여부.
     private Type        _quoteOn = Type.UNKNOWN;
 
@@ -289,9 +293,10 @@ public class YMLParser
             
             curIndent = p;
             
+            /*
             System.out.printf("%d: Indent: %d, Type: %s, Next Position: %d, value: [%s], LastTokenType: %s\n"
                 , _lineNo, curIndent, tokenType, np, infoValue, (_curToken == null ? "n/a" : _curToken.type())
-            );
+            ); // */
             
             if( tokenType == Type.COMMENT )
             {
@@ -467,18 +472,27 @@ public class YMLParser
         }
     }
     
-    public YMLToken getDocument(int index)
+    /**
+     * Parsing 결과를 객체 형태로 반환.
+     * @param index Document 번호
+     * @return Parsing 결과에 따라, JSONObject, JSONArray, String, Long, Double일 수 있음.
+     */
+    public Object getDocument(int index)
     {
         finish();
         
         YMLToken token = _documents.get(index);
-
-        System.out.println(token.toJson());
-
-        return token;
+        return token.getValueObject();
     }
 
-    public static JSONObject toJsonObject(String ymlText) throws Exception
+    /**
+     * YML을 파싱하여 결과를 객체 형태로 반환함. 반환되는 객체의 형태는 YMLParser.getDocument() 참고.
+     * @param ymlText       파싱 대상 YML
+     * @param documentNo    파싱한 YML 내 Document 번호. 파싱 결과 Document의 개수가 이 값보다 작으면 null 반환.
+     * @return 파싱된 결과 객체 반환. 형태는 YMLParser.getDocument() 참고
+     * @throws Exception
+     */
+    public static Object toJsonObject(String ymlText, int documentNo) throws Exception
     {
         YMLParser psr = new YMLParser();
         
@@ -492,84 +506,13 @@ public class YMLParser
         }
 
         in.close();
+        psr.finish();
 
-        // return psr.getResult();
-        return null;
+        return psr.countOfDocument() < documentNo ? null : psr.getDocument(documentNo);
     }
     
-    
-    public static void main(String[] args)
+    public static Object toJsonObject(String ymlText) throws Exception
     {
-        YMLParser yml = new YMLParser();
-        
-        String[] testYml = new String[]
-        {
-            "---"
-            , "map1: # 코멘트"
-            , "# 라인 코멘트"
-            , "  child0:    "
-            , "  child1: ab#c"
-            , "  child2: e-fc"
-            , "test0:"
-            , "test1:"
-            , "  id: 123"
-            , "  name: hong"
-            , "  desc: "
-            , "  phone: 123"
-            , "test2:"
-            , "  - aaa"
-            , "    - dfsa"
-            , "  - id: 123"
-            , "    name: hong"
-            , "test3:"
-            , " - a1"
-            , " - a2"
-            , "test4:"
-            , "- - - a - -"
-            , "      - b"
-            , "  - "
-            , "test5: |"
-            , "  abc"
-            , "  def"
-            , "  "
-            , "test6:"
-            , "  - > "
-            , "   ghijk"
-            , "   lmnopqr sudr"
-            , "  - ddd"
-
-            , "quotest1: \\abf''"
-            , "quotest2: 'abc"
-            , "eef"
-            , "'"
-            , "quotest3:"
-            , "- I'm the best!"
-            , "- 'ghj'"
-            , "quotest4:"
-            
-//            , ">"
-//            , "  abc"
-//            , "  def"
-            
-//            , "- a"
-//            , "- b"
-//            , "- abc"
-//            , "dfd"
-        };
-        
-        try
-        {
-            for(String lineText : testYml)
-            {
-                yml.pushLineText(lineText);
-            }
-            
-            yml.finish();
-            yml.getDocument(0);
-        }
-        catch(Exception xe)
-        {
-            xe.printStackTrace();
-        }
+        return toJsonObject(ymlText, 0);
     }
 }
