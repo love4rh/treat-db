@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.netty.example.http.websocketx.server;
+package com.tool4us.net.wsocket;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

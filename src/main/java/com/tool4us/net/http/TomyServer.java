@@ -224,13 +224,9 @@ class TomyServerInitializer extends ChannelInitializer<SocketChannel>
             .allowNullOrigin()
             .allowCredentials()
             .allowedRequestMethods(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS)
-            //.allowedRequestHeaders("x-auth-code", "Content-Type")
-            //.preflightResponseHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Origin")
             .build();
 
         pl.addLast(new HttpServerCodec())
-          // .addLast(new HttpObjectAggregator(65536))
-          // .addLast(new ChunkedWriteHandler())
           .addLast(new CorsHandler(corsConfig))
           .addLast(new HttpContentCompressor())
           .addLast(new TomyServerHandler(_requestFac, _vRoot))
