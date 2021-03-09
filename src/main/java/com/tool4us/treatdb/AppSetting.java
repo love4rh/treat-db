@@ -4,19 +4,22 @@ import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 
-import lib.turbok.archive.ArchiveElement;
-import lib.turbok.archive.XMLArchive;
+import com.tool4us.common.AppOptions;
+
 import lib.turbok.util.UsefulTool;
+
 
 
 /**
  * AppSetting manages Application Setting Values.
  * 
- * @author mh9.kim
+ * @author TurboK
  */
 public enum AppSetting
 {
     OPT;
+    
+    private AppOptions  _options = null;
     
     private String  _serverID = null;
     
@@ -50,90 +53,46 @@ public enum AppSetting
     
     private AppSetting()
     {
-        //
+        _options = new AppOptions();
     }
     
     public void initialize(String configFile) throws Exception
     {
         _configFile = configFile;
         
-        XMLArchive ar = new XMLArchive(_configFile, true);
-        
-        load(ar, false);
-        
-        ar.close();
+        reload();
     }
     
     public void reload() throws Exception
     {
-        XMLArchive ar = new XMLArchive(_configFile, true);
-        
-        load(ar, true);
-        
-        ar.close();
+        _options.initialize(_configFile);
+        load();
     }
     
-    public void load(XMLArchive ar, boolean isReload) throws Exception
+    private void load() throws Exception
     {
-        ArchiveElement arElem = null;
-        
-        while( null != (arElem = ar.readElement()) )
+        String[] pathName = new String[] { "folder/temporary", "folder/vroot" };
+        for(String key : pathName)
         {
-            String tagPath = arElem.getTagPath();
+            String value = _options.getAsString(key);
             
-            if( tagPath.endsWith("/treatHD") )
+            if( value == null )
+                continue;
+            
+            if( value.startsWith("./") )
             {
-                    // 모두 읽은 경우임
-                if( arElem.isReadFinished() )
-                    break;
+                value = UsefulTool.GetModulePath() + File.separator + value.substring(2);
             }
             
-            if( arElem.isReadFinished() )
-            {
-                if( !isReload && tagPath.endsWith("/param") )
-                {
-                    String keyValue = UsefulTool.concat(arElem.getParent().getTagName()
-                            , "/", arElem.getAttribute("name"));
-
-                    String value = arElem.getTextValue();
-                    
-                    if( keyValue.startsWith("folder") && value.startsWith("./") )
-                    {
-                        value = UsefulTool.GetModulePath() + File.separator + value.substring(2);
-                    }
-                    
-                    _param.put(keyValue, value);
-                }
-                else if( !isReload && tagPath.endsWith("/setting/id") )
-                {
-                    _serverID = arElem.getTextValue();
-                }
-                else if( !isReload && tagPath.endsWith("/network/servicePort") )
-                {
-                    _port = Integer.parseInt(arElem.getTextValue());
-                }
-                else if( !isReload && tagPath.endsWith("/network/bossThread") )
-                {
-                    _bossThreadNum = Integer.parseInt(arElem.getTextValue());
-                }
-                else if( !isReload && tagPath.endsWith("/network/workerThread") )
-                {
-                    _serviceThreadNum = Integer.parseInt(arElem.getTextValue());
-                }
-                else if( !isReload && tagPath.endsWith("/withConsole") )
-                {
-                    _withConsole = "true".equals(arElem.getTextValue());
-                }
-                else if( !isReload && tagPath.endsWith("/logging/useFile") )
-                {
-                    _fileLogging = "true".equals(arElem.getTextValue());
-                }
-                else if( !isReload && tagPath.endsWith("/keepOlds") )
-                {
-                    _keepOld = "true".equals(arElem.getTextValue());
-                }
-            }
+            _param.put(key, value);
         }
+        
+        _serverID = _options.getAsString("setting/id");
+        _port = _options.getAsInteger("network/port", 8080);
+        _bossThreadNum = _options.getAsInteger("network/bossThread", 1);
+        _serviceThreadNum = _options.getAsInteger("/network/workerThread", 4);
+        _withConsole = _options.getAsBoolean("setting/withConsole", false);
+        _fileLogging = _options.getAsBoolean("logging/useFile", true);
 
         _temporaryFolder = parameter("folder", "temporary");
 

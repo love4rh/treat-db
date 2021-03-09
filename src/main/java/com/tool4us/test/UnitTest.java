@@ -23,6 +23,9 @@ public class UnitTest
         String[] testYml = new String[]
         {
               "---" + newLine
+            + "vroot: 'D:\\EclipseData\\Andromeda\\treatDB\\clientApp\\build'" + newLine
+
+            + "---" + newLine
             + "map1: # 코멘트" + newLine
             + "# 라인 코멘트" + newLine
             + "  child0:    " + newLine

@@ -25,7 +25,7 @@ public class AppTreatDB
         else
         {
             configFile = UsefulTool.concat( UsefulTool.GetModulePath()
-                  , File.separator, "conf", File.separator, "setting.xml" );
+                  , File.separator, "conf", File.separator, "setting.yml" );
         }
         
         System.out.println("Treat DB Sever starting...");

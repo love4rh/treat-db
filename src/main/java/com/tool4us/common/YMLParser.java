@@ -2,6 +2,9 @@ package com.tool4us.common;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -173,6 +176,9 @@ public class YMLParser
                 sb.append(ch);
                 prevSpace = Character.isWhitespace(ch);
                 p += 1;
+                
+                if( ch == ESCAPE_CHAR )
+                    ch = '\0';
             }
         }
         
@@ -207,6 +213,9 @@ public class YMLParser
                 default:
                     break;
                 }
+
+                pch = '\0';
+                sb.append(ch);
             }
             else if( ch == ending )
             {
@@ -485,18 +494,12 @@ public class YMLParser
         return token.getValueObject();
     }
 
-    /**
-     * YML을 파싱하여 결과를 객체 형태로 반환함. 반환되는 객체의 형태는 YMLParser.getDocument() 참고.
-     * @param ymlText       파싱 대상 YML
-     * @param documentNo    파싱한 YML 내 Document 번호. 파싱 결과 Document의 개수가 이 값보다 작으면 null 반환.
-     * @return 파싱된 결과 객체 반환. 형태는 YMLParser.getDocument() 참고
-     * @throws Exception
-     */
-    public static Object toJsonObject(String ymlText, int documentNo) throws Exception
+    
+    public static Object toJsonObject(InputStream is, int documentNo) throws Exception
     {
         YMLParser psr = new YMLParser();
         
-        BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(ymlText.getBytes()), "UTF-8"));
+        BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
         
         String lineText = in.readLine();
         while( lineText != null )
@@ -511,8 +514,30 @@ public class YMLParser
         return psr.countOfDocument() < documentNo ? null : psr.getDocument(documentNo);
     }
     
+    /**
+     * YML을 파싱하여 결과를 객체 형태로 반환함. 반환되는 객체의 형태는 YMLParser.getDocument() 참고.
+     * @param ymlText       파싱 대상 YML
+     * @param documentNo    파싱한 YML 내 Document 번호. 파싱 결과 Document의 개수가 이 값보다 작으면 null 반환.
+     * @return 파싱된 결과 객체 반환. 형태는 YMLParser.getDocument() 참고
+     * @throws Exception
+     */
+    public static Object toJsonObject(String ymlText, int documentNo) throws Exception
+    {
+        return toJsonObject(new ByteArrayInputStream(ymlText.getBytes()), documentNo);
+    }
+    
     public static Object toJsonObject(String ymlText) throws Exception
     {
         return toJsonObject(ymlText, 0);
+    }
+    
+    public static Object toJsonObject(File ymlFile, int documentNo) throws Exception
+    {
+        return toJsonObject(new FileInputStream(ymlFile), documentNo);
+    }
+    
+    public static Object toJsonObject(File ymlFile) throws Exception
+    {
+        return toJsonObject(new FileInputStream(ymlFile), 0);
     }
 }
