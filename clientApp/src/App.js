@@ -1,13 +1,13 @@
 import React from 'react';
 
 import './App.css';
-import MainFrame from './view/MainFrame.js';
+import EditorFrame from './view/EditorFrame.js';
 
 
 function App() {
   return (
     <div className="App">
-      <MainFrame />
+      <EditorFrame />
     </div>
   );
 }

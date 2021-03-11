@@ -14,7 +14,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.cors.CorsConfig;
@@ -228,7 +227,7 @@ class TomyServerInitializer extends ChannelInitializer<SocketChannel>
 
         pl.addLast(new HttpServerCodec())
           .addLast(new CorsHandler(corsConfig))
-          .addLast(new HttpContentCompressor())
+          // .addLast(new HttpContentCompressor()) // 얘가 들어 가면 정적 파일들이 안 내려감...
           .addLast(new TomyServerHandler(_requestFac, _vRoot))
         ;
     }

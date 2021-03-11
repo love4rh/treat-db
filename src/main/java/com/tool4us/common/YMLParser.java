@@ -116,7 +116,6 @@ public class YMLParser
         while( p < text.length() && tokenType == Type.UNKNOWN )
         {
             char pch = ch;
-            
             ch = text.charAt(p);
 
             if( pch == ESCAPE_CHAR )
@@ -214,8 +213,8 @@ public class YMLParser
                     break;
                 }
 
-                pch = '\0';
                 sb.append(ch);
+                ch = '\0';
             }
             else if( ch == ending )
             {
@@ -225,9 +224,7 @@ public class YMLParser
 
                 closed = true;
             }
-            else if( ch == ESCAPE_CHAR )
-                continue;
-            else
+            else if( ch != ESCAPE_CHAR )
                 sb.append(ch);
             
             p += 1;
@@ -248,7 +245,10 @@ public class YMLParser
             _curToken.addValue((String) r[0]);
             
             if( (Boolean) r[1] )
+            {
+                _curToken.setClosed(true);
                 _quoteOn = Type.UNKNOWN;
+            }
             
             return;
         }
@@ -415,12 +415,16 @@ public class YMLParser
                 
                 if( !(Boolean) r[1] )
                     _quoteOn = tokenType;
+                else
+                    _curToken.setClosed(true);
 
                 break;
             }
             else if( _curToken != null )
             {
-                if( _curToken.valueIndent() == -1 )
+                if( _curToken.isClosed() )
+                    throw makeException("expected a comment or a line break", _lineNo, p);
+                else if( _curToken.valueIndent() == -1 )
                     _curToken.setValueIndent(curIndent);
                 else if( _curToken.valueIndent() > curIndent )
                     throw makeException("invalid value indent", _lineNo, p);

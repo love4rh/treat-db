@@ -390,6 +390,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<HttpObject>
         
         long eTick = UT.tickCount();
 
+        // PTIME: [Request 데이터 수령 완료 시간, API 처리 시간, 결과 전송 시간, 전체 소요시간]
         if( _detailLogging && UT.isValidString(retContent) )
         {
             Logs.info("[{}:RES] [PTIME:{}, {}, {}, {}] [STATUS:{}] [CONTENT:{}]"

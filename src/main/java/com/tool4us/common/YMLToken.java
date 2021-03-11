@@ -49,6 +49,10 @@ public class YMLToken
     
     // 디버깅 용도로 추가한 멤버임. 없어도 문제 없음.
     private List<YMLToken>  _children = new ArrayList<YMLToken>();
+    
+    // 따옴표 묶임이 끝나 더 이상 값을 추가할 수 없는 경우를 나타내기 위한 플래그
+    private boolean         _closed = false;
+    
 
 
     public YMLToken(YMLToken parent, int indent)
@@ -68,8 +72,8 @@ public class YMLToken
     @Override
     public String toString()
     {
-        return String.format("KEY:{%s} TYPE:{%s} INDENT:{%d} VINDENT:{%d} VALUE:{%s} CHILD:{%d}"
-            , _key, _type, _indent, _valueIndent, _sbValue.toString(), _children.size()
+        return String.format("KEY:{%s} TYPE:{%s} INDENT:{%d} VINDENT:{%d} VALUE:{%s} CLOSED:{%s} CHILD:{%d}"
+            , _key, _type, _indent, _valueIndent, _sbValue.toString(), (_closed ? "true" : "false"), _children.size()
         );
     }
     
@@ -162,8 +166,22 @@ public class YMLToken
         return this;
     }
     
+    public boolean isClosed()
+    {
+        return _closed;
+    }
+    
+    public void setClosed(boolean closed)
+    {
+        _closed = closed;
+    }
+    
     public YMLToken addValue(String value)
     {
+        // TODO 예외를 발생시켜야 하나?
+        if( _closed )
+            return this;
+        
         if( _type == Type.UNKNOWN )
             this.setType(Type.VALUE);
         
@@ -182,6 +200,9 @@ public class YMLToken
     
     public boolean checkAddValue(String lineText, int indent)
     {
+        if( _closed )
+            return false;
+
         if( lineText.isEmpty() && isMultiLined() )
         {
             _sbValue.append(_type == Type.MULTILINE ? '\n' : ' ');

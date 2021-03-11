@@ -1,0 +1,13 @@
+$headerHeight: 54px;
+$bodyHeight: calc(100vh - 54px);
+
+
+.editorFrame {
+  min-height: 100vh;
+  min-width: 100vw;
+}
+
+.editorBox {
+  min-height: 90vh;
+  width: 100%;
+}

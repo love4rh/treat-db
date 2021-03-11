@@ -1,5 +1,5 @@
 # packages
-yarn add axios react-bootstrap bootstrap node-sass@4.14.1 react-icons
+yarn add axios react-bootstrap bootstrap node-sass@4.14.1 react-icons @monaco-editor/react
 
 
 # reference
