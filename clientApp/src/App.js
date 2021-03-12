@@ -1,13 +1,13 @@
 import React from 'react';
 
 import './App.css';
-import EditorFrame from './view/EditorFrame.js';
+import MainFrame from './view/MainFrame.js';
 
 
 function App() {
   return (
     <div className="App">
-      <EditorFrame />
+      <MainFrame appTitle={'Treat DB'} />
     </div>
   );
 }

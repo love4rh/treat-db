@@ -44,7 +44,7 @@ $bodyHeight: calc(100vh - 54px);
 
 .scrollLock {
 	height: $bodyHeight;
-	overflow-x: hidden;
+	overflow: hidden;
 }
 
 .mainBody {

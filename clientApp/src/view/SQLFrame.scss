@@ -1,0 +1,21 @@
+$headerHeight: 54px;
+$bodyHeight: calc(100vh - 54px);
+
+
+.sqlFrame {
+  height: $bodyHeight;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topPane {
+  display: flex;
+  flex: 1 1 0;
+  background-color: red;
+}
+
+.bottomPane {
+  display: flex;
+  background-color: blue;
+}
