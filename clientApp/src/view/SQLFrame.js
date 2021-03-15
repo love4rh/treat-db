@@ -4,6 +4,8 @@ import cn from 'classnames';
 
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
+import QuerySpace from '../view/QuerySpace.js';
+
 import './SQLFrame.scss';
 
 
@@ -13,7 +15,8 @@ class SQLFrame extends Component {
     super(props);
 
     this.state = {
-      bottomHeight: 250
+      bottomHeight: 150,
+      leftWidth: 300
     };
   }
 
@@ -25,29 +28,39 @@ class SQLFrame extends Component {
     //
   }
 
-  handleLayoutChange = (from, to) => {
-    const { bottomHeight } = this.state;
-    this.setState({ bottomHeight: bottomHeight + to - from });
+  handleLayoutChanged = (type) => (from, to) => {
+    const { bottomHeight, leftWidth } = this.state;
+
+    if( 'topBottom' === type ) {
+      this.setState({ bottomHeight: bottomHeight + to - from });
+    } else if( 'leftRight' === type ) {
+      this.setState({ leftWidth: leftWidth + to - from });
+    }
   }
 
   render() {
-    const { bottomHeight } = this.state;
+    const { bottomHeight, leftWidth } = this.state;
+    const dividerSize = 4;
 
     return (
       <div className="sqlFrame">
-        <div
-          className="topPane"
-        >
-          Workspace
+        <div className="topPane">
+          <div className="leftPane" style={{ flexBasis:`${leftWidth}px` }}>
+            Left Pane
+          </div>
+          <LayoutDivider direction={DividerDirection.vertical}
+            size={dividerSize}
+            onLayoutChange={this.handleLayoutChanged('leftRight')}
+          />
+          <div className="rightPane">
+            <QuerySpace />
+          </div>
         </div>
         <LayoutDivider direction={DividerDirection.horizontal}
-          size={4}
-          onLayoutChange={this.handleLayoutChange}
+          size={dividerSize}
+          onLayoutChange={this.handleLayoutChanged('topBottom')}
         />
-        <div
-          className="bottomPane"
-          style={{ flexBasis:`${bottomHeight}px` }}
-        >
+        <div className="bottomPane" style={{ flexBasis:`${bottomHeight}px` }}>
           Console
         </div>
       </div>

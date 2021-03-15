@@ -1,0 +1,23 @@
+$headerHeight: 54px;
+$bodyHeight: calc(100vh - 54px);
+
+
+.queryBox {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editorPane {
+  display: flex;
+}
+
+.editorBox {
+  height: 100%;
+}
+
+.gridPane {
+  display: flex;
+  flex: 1 1 0;
+  background-color: yellow;
+}
