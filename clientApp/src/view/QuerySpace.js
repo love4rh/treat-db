@@ -24,7 +24,7 @@ class QuerySpace extends Component {
   constructor (props) {
     super(props);
 
-    const ds = new DataSource({ colCount: 10, rowCount: 1000 });
+    const ds = new DataSource({ columnCount: 10, rowCount: 1000 });
 
     this.state = {
       gridHeight: 350,
@@ -72,10 +72,6 @@ class QuerySpace extends Component {
     this.setState({ gridHeight: gridHeight + to - from });
   }
 
-  handleClick = () => {
-    console.log(this._editor.getPosition());
-  }
-
   render() {
     const dividerSize = 4;
     const { clientWidth, clientHeight, gridHeight, ds } = this.state;
@@ -90,8 +86,10 @@ class QuerySpace extends Component {
           size={dividerSize}
           onLayoutChange={this.handleLayoutChanged}
         />
-        <div className="resultPane" style={{ flexBasis:`${gridHeight}px` }} onClick={this.handleClick}>
+        <div className="resultPane" style={{ flexBasis:`${gridHeight}px`, height: gridHeight, width: clientWidth }}>
           <DataGrid
+            height={gridHeight}
+            width={clientWidth}
             dataSource={ds}
             userBeginRow={0}
           />

@@ -46,6 +46,8 @@ class DataGrid extends Component {
     showColumnNumber: PropTypes.bool,  // 컬럼번호 표시여부. 기본값 true
     userBeginRow: PropTypes.number,  // 처음 표시할 시작 위치
     fixableCount: PropTypes.number,  // Fixed 가능한 컬럼 개수
+    height: PropTypes.number,
+    width: PropTypes.number,
   }
 
   static CalcRowNumPerpage = (height, rowHeight, headerCount) => {
@@ -53,11 +55,11 @@ class DataGrid extends Component {
   }
 
   static recalculateDimension = (props, state, nw, nh, colWidth, fixedColIdx) => {
-    const { dataSource, onVisibleAreaChanged } = props;
+    const { dataSource, onVisibleAreaChanged, height, width } = props;
     const { cw, ch, showRowNumber, showColumnNumber, columnWidth, fixedColumn } = state;
 
-    if( isundef(nw) ) nw = cw;
-    if( isundef(nh) ) nh = ch;
+    if( isundef(nw) ) nw = nvl(width, cw);
+    if( isundef(nh) ) nh = nvl(height, ch);
     if( isundef(colWidth) && columnWidth ) colWidth = columnWidth;
     if( isundef(fixedColIdx) ) fixedColIdx = fixedColumn;
 
@@ -102,7 +104,7 @@ class DataGrid extends Component {
   constructor (props) {
     super(props);
 
-    const { dataSource, userBeginRow, fixedColumn, showRowNumber, showColumnNumber } = this.props;
+    const { dataSource, userBeginRow, fixedColumn, showRowNumber, showColumnNumber, height, width } = this.props;
     const columnWidth = this.calcIntialColumnWidth(480);
 
     this.state = {
@@ -121,8 +123,8 @@ class DataGrid extends Component {
       fixedColumn: nvl(fixedColumn, 0),
       clickTick: [0, 0],
       inFinding: false,
-      cw: 0,
-      ch: 0,
+      cw: nvl(width, 0),
+      ch: nvl(height, 0),
       showRowNumber: isvalid(showRowNumber) ? showRowNumber : true,
       showColumnNumber: isvalid(showColumnNumber) ? showColumnNumber : true
     };
@@ -150,7 +152,10 @@ class DataGrid extends Component {
 
   componentDidMount () {
     setCurrentActiveGrid(this);
-    window.addEventListener('resize', this.onResize);
+
+    if( isundef(this.props.height) || isundef(this.props.width) ) {
+      window.addEventListener('resize', this.onResize);
+    }
 
     const { clientWidth, clientHeight } = this._refMain.current;
     this.setState( DataGrid.recalculateDimension(this.props, this.state, clientWidth, clientHeight) );
@@ -180,7 +185,10 @@ class DataGrid extends Component {
 
   componentWillUnmount () {
     dismissActiveGrid(this);
-    window.removeEventListener('resize', this.onResize);
+
+    if( isundef(this.props.height) || isundef(this.props.width) ) {
+      window.removeEventListener('resize', this.onResize);
+    }
 
     if( isvalid(this.dataFetchJob) ) {
       clearTimeout(this.dataFetchJob);
@@ -524,7 +532,7 @@ class DataGrid extends Component {
   }
 
   onDataAreaWheel = (ev) => {
-    // console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode);
+    console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode);
     // ev.preventDefault();
     ev.stopPropagation();
 
@@ -825,6 +833,17 @@ class DataGrid extends Component {
     }
   }
 
+  handleMouseEnter = (ev) => {
+    console.log('handleMouseEnter', ev);
+    if( isvalid(this._refMain.current) ) {
+      this._refMain.current.focus();
+    }
+  }
+
+  handleMouseLeave = (ev) => {
+    console.log('handleMouseLeave', ev);
+  }
+
   // type: open(filter), close(filter), pinned, unpinned
   // param { colIdx, pos:{x,y}, ... }
   // open일 경우 param에 cbClose:func 추가됨.
@@ -1122,6 +1141,8 @@ class DataGrid extends Component {
         className="wrapGrid"
         onKeyDown={this.onKeyDown}
         onFocus={this.onFocus}
+        onMouseEnter={this.handleMouseEnter}
+        onMouseLeave={this.handleMouseLeave}
       >
         <div className="wrapContainer"
           style={{ height:dcHeight, flexBasis:dcHeight }}

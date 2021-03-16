@@ -15,10 +15,10 @@ class SQLFrame extends Component {
     super(props);
 
     this.state = {
-      clientWidth: 800,
-      clientHeight: 600,
+      clientWidth: 600,
+      clientHeight: 400,
       bottomHeight: 150,
-      leftWidth: 300
+      leftWidth: 200
     };
 
     this._mainDiv = React.createRef();
@@ -36,8 +36,7 @@ class SQLFrame extends Component {
   onResize = () => {
     const { clientWidth, clientHeight } = this._mainDiv.current;
 
-    console.log('SQLFrame onResize', clientWidth, clientHeight);
-
+    // console.log('SQLFrame onResize', clientWidth, clientHeight);
     this.setState({ clientWidth, clientHeight });
   }
 
@@ -45,15 +44,17 @@ class SQLFrame extends Component {
     const { bottomHeight, leftWidth } = this.state;
 
     if( 'topBottom' === type ) {
+      console.log('layout top-bottom', bottomHeight, to - from);
       this.setState({ bottomHeight: bottomHeight + to - from });
     } else if( 'leftRight' === type ) {
+      console.log('layout left-right', leftWidth, to - from);
       this.setState({ leftWidth: leftWidth + to - from });
     }
   }
 
   render() {
-    const { clientWidth, clientHeight, bottomHeight, leftWidth } = this.state;
     const dividerSize = 4;
+    const { clientWidth, clientHeight, bottomHeight, leftWidth } = this.state;
 
     return (
       <div ref={this._mainDiv} className="sqlFrame">
@@ -65,7 +66,9 @@ class SQLFrame extends Component {
             size={dividerSize}
             onLayoutChange={this.handleLayoutChanged('leftRight')}
           />
-          <QuerySpace width={clientWidth - leftWidth - dividerSize} height={clientHeight - bottomHeight - dividerSize} />
+          <div className="leftPane" style={{ flexBasis:`${clientWidth - leftWidth - dividerSize}px` }}>
+            <QuerySpace width={clientWidth - leftWidth - dividerSize} height={clientHeight - bottomHeight - dividerSize} />
+          </div>
         </div>
         <LayoutDivider direction={DividerDirection.horizontal}
           size={dividerSize}
