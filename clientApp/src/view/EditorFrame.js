@@ -27,6 +27,7 @@ class EditorFrame extends Component {
     // here is the monaco instance
     // do something before editor is mounted
     monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
+    // scrollBeyondLastLine={false}
   }
 
   handleEditorDidMount = (editor, monaco) => {

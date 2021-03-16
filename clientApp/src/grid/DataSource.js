@@ -1,4 +1,4 @@
-import {isvalid, nvl} from '../common/tool.js';
+import { isvalid, nvl } from './common.js';
 
 
 

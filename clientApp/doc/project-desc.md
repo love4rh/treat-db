@@ -37,3 +37,10 @@ https://heropy.blog/2019/02/28/blob/
 
 https://stackoverflow.com/questions/23024460/javascript-i-created-a-blob-from-a-string-how-do-i-get-the-string-back-out
 
+
+
+## Monaco Editor Reference
+- Monaco Editor Wrapper: https://www.npmjs.com/package/@monaco-editor/react
+- Monaco Editor Git: https://microsoft.github.io/monaco-editor/playground.html
+- Play Ground: https://monaco-react.surenatoyan.com/
+- Monaco Editor API: https://microsoft.github.io/monaco-editor/api/modules/monaco.editor.html
