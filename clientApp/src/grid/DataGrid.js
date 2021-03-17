@@ -532,7 +532,7 @@ class DataGrid extends Component {
   }
 
   onDataAreaWheel = (ev) => {
-    console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode);
+    // console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode);
     // ev.preventDefault();
     ev.stopPropagation();
 
@@ -833,15 +833,16 @@ class DataGrid extends Component {
     }
   }
 
-  handleMouseEnter = (ev) => {
-    console.log('handleMouseEnter', ev);
+  handleMouseEnter = () => {
+    // document.body.style['pointer-events'] = 'none';
+
     if( isvalid(this._refMain.current) ) {
       this._refMain.current.focus();
     }
   }
 
-  handleMouseLeave = (ev) => {
-    console.log('handleMouseLeave', ev);
+  handleMouseLeave = () => {
+    // document.body.style['pointer-events'] = 'auto';
   }
 
   // type: open(filter), close(filter), pinned, unpinned

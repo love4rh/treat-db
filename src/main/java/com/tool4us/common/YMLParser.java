@@ -302,7 +302,7 @@ public class YMLParser
             
             curIndent = p;
             
-            /*
+            //*
             System.out.printf("%d: Indent: %d, Type: %s, Next Position: %d, value: [%s], LastTokenType: %s\n"
                 , _lineNo, curIndent, tokenType, np, infoValue, (_curToken == null ? "n/a" : _curToken.type())
             ); // */
@@ -322,6 +322,8 @@ public class YMLParser
                 
                 if( _rootToken.isType(Type.UNKNOWN) )
                     _rootToken.setType(Type.MAPPING);
+                if( _curToken != null && _curToken.isType(Type.UNKNOWN) )
+                    _curToken.setType(Type.MAPPING);
 
                 keyOn = true;
                 
@@ -363,7 +365,16 @@ public class YMLParser
                 {
                     // curIndent 보다 하나 더 위로 가야 함.
                     YMLToken tokenAtIndent = findToken(curIndent);
-                    _curToken = rollUp(tokenAtIndent.parent().indent());
+                    YMLToken parentToken = tokenAtIndent.parent();
+
+                    _curToken = rollUp(parentToken.indent());
+                    
+                    parentToken = _curToken.parent();
+                    
+                    if( parentToken != null && parentToken.isType(Type.LIST) && parentToken.indent() == _curToken.indent() )
+                    {
+                        _curToken = _curToken.rollUp(parentToken.indent());
+                    }
                 }
                 
                 if( _curToken == null || _curToken == _rootToken )

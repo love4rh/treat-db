@@ -27,6 +27,11 @@ public class AppOptions
         _options = (JSONObject) ymlObj;
     }
     
+    public String toJsonString()
+    {
+        return _options == null ? "null" : _options.toString();
+    }
+    
     /**
      * 지정한 위치의 키에 해당하는 옵션 객체 반환.
      * @param keyPath parent/child/subchild 와 같이 '/'로 구분하여 옵션이 있는 위치를 지정함.

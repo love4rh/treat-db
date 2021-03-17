@@ -4,6 +4,9 @@ import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.tool4us.common.AppOptions;
 
 import lib.turbok.util.UsefulTool;
@@ -72,6 +75,7 @@ public enum AppSetting
     private void load() throws Exception
     {
         String[] pathName = new String[] { "folder/temporary", "folder/vroot" };
+
         for(String key : pathName)
         {
             String value = _options.getAsString(key);
@@ -98,6 +102,8 @@ public enum AppSetting
 
         if( _temporaryFolder == null )
             _temporaryFolder = UsefulTool.GetModulePath() + File.separator + "temporary";
+
+        // System.out.println(_options.toJsonString());
     }
     
     public int port()
@@ -158,5 +164,31 @@ public enum AppSetting
     public boolean isKeepOldMade()
     {
         return this._keepOld;
+    }
+    
+    public int sizeOfDatabase()
+    {
+        JSONArray dbList = _options.getAsList("database");
+        
+        return dbList == null ? 0 : dbList.length();
+    }
+    
+    public String[] getDatabaseOption(int idx)
+    {
+        JSONArray dbList = _options.getAsList("database");
+        
+        if( dbList == null )
+            return null;
+        
+        JSONObject dbOpt = (JSONObject) dbList.get(idx);
+        
+        return new String[]
+        {
+              dbOpt.getString("name")
+            , "com.mysql.jdbc.Driver"
+            , dbOpt.getString("server")
+            , dbOpt.getString("account")
+            , dbOpt.getString("password")
+        };
     }
 }
