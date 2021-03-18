@@ -58,3 +58,6 @@ target/
 # general
 temporary/
 log/
+
+mock*.txt
+
