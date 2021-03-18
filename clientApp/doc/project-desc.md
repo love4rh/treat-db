@@ -1,11 +1,15 @@
 # packages
-yarn add axios react-bootstrap bootstrap node-sass@4.14.1 react-icons @monaco-editor/react
+yarn add axios react-bootstrap bootstrap node-sass@4.14.1 react-icons @monaco-editor/react @material-ui/core @material-ui/lab @material-ui/icons
 
 
 # reference
 
 ## SCSS 사용법
 https://medium.com/@jsh901220/react%EC%97%90-scss-%EC%A0%81%EC%9A%A9%EB%B0%8F-%EA%B8%B0%EB%B3%B8-%EC%82%AC%EC%9A%A9%EB%B2%95-1-c7bd2895f5a6
+
+
+## material-ui
+https://material-ui.com/
 
 
 ## video tag properies

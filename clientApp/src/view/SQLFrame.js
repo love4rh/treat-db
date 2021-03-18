@@ -4,6 +4,7 @@ import cn from 'classnames';
 
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
+import MetaViewer from '../view/MetaViewer.js';
 import QuerySpace from '../view/QuerySpace.js';
 
 import './SQLFrame.scss';
@@ -56,18 +57,21 @@ class SQLFrame extends Component {
     const dividerSize = 4;
     const { clientWidth, clientHeight, bottomHeight, leftWidth } = this.state;
 
+    const mainWidth = clientWidth - leftWidth - dividerSize;
+    const mainHeight = clientHeight - bottomHeight - dividerSize;
+
     return (
       <div ref={this._mainDiv} className="sqlFrame">
         <div className="topPane">
           <div className="leftPane" style={{ flexBasis:`${leftWidth}px` }}>
-            Left Pane
+            <MetaViewer width={leftWidth} height={mainHeight} />
           </div>
           <LayoutDivider direction={DividerDirection.vertical}
             size={dividerSize}
             onLayoutChange={this.handleLayoutChanged('leftRight')}
           />
-          <div className="leftPane" style={{ flexBasis:`${clientWidth - leftWidth - dividerSize}px` }}>
-            <QuerySpace width={clientWidth - leftWidth - dividerSize} height={clientHeight - bottomHeight - dividerSize} />
+          <div className="rightPane" style={{ flexBasis:`${mainWidth}px` }}>
+            <QuerySpace width={mainWidth} height={mainHeight} />
           </div>
         </div>
         <LayoutDivider direction={DividerDirection.horizontal}

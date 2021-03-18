@@ -532,12 +532,14 @@ class DataGrid extends Component {
   }
 
   onDataAreaWheel = (ev) => {
-    // console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode);
     // ev.preventDefault();
     ev.stopPropagation();
 
     // down: +, up: -
     const offsetY = (ev.deltaY < 0 ? -1 : 1) * Math.ceil(Math.abs(ev.deltaY) / 80);
+
+    console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode, offsetY);
+
     const newBegin = this.calcNewBeginRow(offsetY);
 
     if( Math.abs(ev.deltaX) >= 1 ) {
