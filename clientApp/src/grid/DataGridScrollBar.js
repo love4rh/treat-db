@@ -7,7 +7,7 @@ import './styles.scss';
 
 
 
-export const _scrollBarWith_ = 9;
+export const _scrollBarWith_ = 14;
 
 
 const makeScrollState =  (props, state, dimChanged) => {
@@ -197,13 +197,14 @@ class DataGridScrollBar extends Component {
     const { barHeight, barWidth, vertical, thumbPos, thumbSize } = this.state;
 
     let barStyle = {}, thumbStyle = {};
+    const adjThumb = 1;
 
     if( vertical ) {
-      barStyle = { height:barHeight, width:barWidth };
-      thumbStyle = { top:thumbPos, left:1, width:barWidth - 2, height: thumbSize };
+      barStyle = { height:barHeight, width:barWidth, borderLeft:'1px solid #61615b' };
+      thumbStyle = { top:thumbPos, left:0, width:(barWidth - adjThumb), height: thumbSize };
     } else {
       barStyle = { height:barWidth, width:barHeight };
-      thumbStyle = { top:1, left:thumbPos, width: thumbSize, height:barWidth - 2 };
+      thumbStyle = { top:1, left:thumbPos, width: thumbSize, height:(barWidth - adjThumb) };
     }
 
     /*

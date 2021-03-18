@@ -187,6 +187,11 @@ public enum Util
         return text != null && !text.isEmpty();
     }
     
+    public Object NVL(Object value, Object defVal)
+    {
+    	return value == null ? defVal : value;
+    }
+    
     public String makeEllipsis(String text, int limit)
     {
         return text.length() <= limit ? text : text.substring(0, limit - 3) + "...";

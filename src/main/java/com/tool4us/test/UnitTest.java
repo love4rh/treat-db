@@ -13,29 +13,13 @@ public class UnitTest
 {
     public static void main(String[] args)
     {
-        testYMLParser();
-        // test();
+        // testYMLParser();
+        test();
     }
     
     public static void test()
     {
-        String ymlText = "---\n"
-                + "database:\n"
-                + "- name: QA2-AIC\n"
-                + "  server: 'jdbc:mysql://rds-uw2-sdp-qa2-mysql-01a.cjbyfjmv7vdu.ap-northeast-2.rds.amazonaws.com:3310/hesdp_ibs'\n"
-                + "  account: 'HESDP_IBS_APP'\n"
-                + "  password: '!imsi0326'\n"
-                + "\n"
-                + "- name: QA2-EIC\n"
-                + "  server: jdbc:mysql://rds-ew1-sdp-qa2-mysql-01a.cjbyfjmv7vdu.ap-northeast-2.rds.amazonaws.com:3310/hesdp_ibs'\n"
-                + "  account: 'HESDP_IBS_MGR'\n"
-                + "  password: '!imsi0326'\n"
-                + "\n"
-                + "- name: QA2-KIC\n"
-                + "  server: 'jdbc:mysql://rds-an2-sdp-qa2-mysql-01a.cjbyfjmv7vdu.ap-northeast-2.rds.amazonaws.com:3310/hesdp_ibs'\n"
-                + "  account: 'HESDP_IBS_APP'\n"
-                + "  password: '!imsi0309'\n"
-                ;
+        String ymlText = "setting:\n  withConsole: true\n";
         try
         {
             Object result = YMLParser.toJsonObject(ymlText, 0);
@@ -154,25 +138,6 @@ public class UnitTest
             + "  name: Sammy Sosa" + newLine
             + "  hr:   63" + newLine
             + "  avg:  0.288" + newLine
-            
-            , "---" + newLine
-            + "database:\n"
-            + "- name: QA2-AIC\n"
-            + "  server: 'jdbc:mysql://rds-uw2-sdp-qa2-mysql-01a.cjbyfjmv7vdu.ap-northeast-2.rds.amazonaws.com:3310/hesdp_ibs'\n"
-            + "  account: 'HESDP_IBS_APP'\n"
-            + "  password: '!imsi0326'\n"
-            + "\n"
-            + "- name: QA2-EIC\n"
-            + "  server: jdbc:mysql://rds-ew1-sdp-qa2-mysql-01a.cjbyfjmv7vdu.ap-northeast-2.rds.amazonaws.com:3310/hesdp_ibs'\n"
-            + "  account: 'HESDP_IBS_MGR'\n"
-            + "  password: '!imsi0326'\n"
-            + "\n"
-            + "- name: QA2-KIC\n"
-            + "  server: 'jdbc:mysql://rds-an2-sdp-qa2-mysql-01a.cjbyfjmv7vdu.ap-northeast-2.rds.amazonaws.com:3310/hesdp_ibs'\n"
-            + "  account: 'HESDP_IBS_APP'\n"
-            + "  password: '!imsi0309'\n"
-            + "setting:\n"
-            + "  withConsole: true\n"
 
             // 에러가 발생해야 정상임.
             , "---" + newLine

@@ -33,10 +33,9 @@ class DataSource {
 
   getPreferedColumnWidth = (c) => {
     const letterWidth = 12 * 8.5 / 16; // 32
+    const gValue = '' + this.getCellValue(c, 0);
 
-    let w = Math.max(50, this.getColumnName(c).length * letterWidth + 16); // minimum size of column
-
-    return Math.ceil(w);
+    return Math.ceil( Math.max(50, Math.max(gValue.length, this.getColumnName(c).length) * letterWidth + 16) );
   }
 
   getRowCount = () => {

@@ -24,10 +24,10 @@ $clrFontGrey: #90918b;
 $fontSizeCell: 12px;
 $fontSizeHeader: 12px;
 
-$clrScroll: #383934;
-$clrScrollOver: #484944;
-$clrThumb: #757672;
-$clrThumbOver: #959692;
+$clrScroll: #1e1e1e; // #383934;
+$clrScrollOver: #2e2e2e; // #484944;
+$clrThumb: #757672; // #757672;
+$clrThumbOver: #959692; // #959692;
 
 $clrFilterOutline: #5ed8ef;
 $clrFixedLine: #5ed8ef;
@@ -228,7 +228,7 @@ $clrWidgetElemSelected: #52534e;
 .sbMain {
   z-index: 9;
   background-color: $clrScroll;
-  border-radius: 3px;
+  // border-radius: 3px;
   cursor: default;
 }
 
@@ -239,7 +239,7 @@ $clrWidgetElemSelected: #52534e;
 .sbThumb {
   position: relative;
   background-color: $clrThumb;
-  border-radius: 3px;
+  // border-radius: 3px;
   cursor: default;
 }
 
