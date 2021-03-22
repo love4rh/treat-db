@@ -538,7 +538,7 @@ class DataGrid extends Component {
     // down: +, up: -
     const offsetY = (ev.deltaY < 0 ? -1 : 1) * Math.ceil(Math.abs(ev.deltaY) / 80);
 
-    console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode, offsetY);
+    // console.log('onDataAreaWheel', ev.deltaX, ev.deltaY, ev.deltaMode, offsetY);
 
     const newBegin = this.calcNewBeginRow(offsetY);
 
@@ -1208,7 +1208,7 @@ class DataGrid extends Component {
         </div>
         { hScroll &&
           <DataGridScrollBar
-            barHeight={dcWidth + 2}
+            barHeight={dcWidth}
             barWidth={sbWidth}
             vertical={false}
             onPositionChanged={this.handleHScrollChanged}

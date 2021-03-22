@@ -222,6 +222,7 @@ class TomyServerInitializer extends ChannelInitializer<SocketChannel>
             .forAnyOrigin()
             .allowNullOrigin()
             .allowCredentials()
+            .allowedRequestHeaders("*")
             .allowedRequestMethods(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS)
             .build();
 

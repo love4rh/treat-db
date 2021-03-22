@@ -9,7 +9,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 
-import org.json.JSONObject;
+import org.json.JSONArray;
 
 import com.tool4us.common.Logs;
 
@@ -95,6 +95,12 @@ public class AppMain
 
         _batchJob = new BatchJobs();
         _batchJob.start();
+        
+        // Refresh databases' meta data
+        long sTick = System.currentTimeMillis();
+        Logs.info("getting databases' metadata");
+        OPT.refreshMetadata();
+        Logs.info("done to get databases' metadata [{}ms]", System.currentTimeMillis() - sTick);
     }
 
     /**
@@ -160,8 +166,8 @@ public class AppMain
         {
             // name, driver, server, account, password
             String[] dbOpt = OPT.getDatabaseOption(0);
-            JSONObject dbMeta = DBTOOL.getMetadata(dbOpt[1], dbOpt[2], dbOpt[3], dbOpt[4]);
-            Logs.info(dbMeta.toString());
+            JSONArray dbMeta = DBTOOL.getMetadata(dbOpt[1], dbOpt[2], dbOpt[3], dbOpt[4]);
+            Logs.info(dbMeta.toString(2));
         }
         catch(Exception xe)
         {

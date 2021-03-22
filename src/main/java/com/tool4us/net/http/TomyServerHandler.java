@@ -194,7 +194,7 @@ public class TomyServerHandler extends SimpleChannelInboundHandler<HttpObject>
             }
         }
         
-        if( msg instanceof HttpContent )
+        if( _request != null && msg instanceof HttpContent )
         {
             HttpContent httpContent = (HttpContent) msg;
             

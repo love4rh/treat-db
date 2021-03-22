@@ -302,7 +302,7 @@ public class YMLParser
             
             curIndent = p;
             
-            //*
+            /*
             System.out.printf("%d: Indent: %d, Type: %s, Next Position: %d, value: [%s], LastTokenType: %s\n"
                 , _lineNo, curIndent, tokenType, np, infoValue, (_curToken == null ? "n/a" : _curToken.type())
             ); // */

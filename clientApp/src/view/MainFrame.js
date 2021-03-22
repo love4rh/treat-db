@@ -28,12 +28,13 @@ class MainFrame extends Component {
     const lastUser = localStorage.getItem('lastUser') || '';
 
     this.state = {
-      pageType: 'main', // entry, main
+      pageType: 'entry', // entry, main
       userID: lastUser,
       message: null,
       waiting: false,
       menuShown: false,
-      redrawCount: 0
+      redrawCount: 0,
+      databases: null
     };
 
     this.handleUnload = this.handleUnload.bind(this);
@@ -100,8 +101,17 @@ class MainFrame extends Component {
     localStorage.setItem('lastUser', userID);
 
     // TODO 초기 데이터 로딩
-    this.enterWaiting();
-    setTimeout(() => this.leaveWaiting(), 2000);
+    apiProxy.getMetaData(
+      '124816',
+      (res) => {
+        // console.log('metadata result:', res);
+        this.setState({ pageType:'main', databases:res.data.response });
+      },
+      (err) => {
+        console.log('error:', err);
+        this.showInstanceMessage('error occurrs.');
+      }
+    );
   }
 
   handleMenu = () => {
@@ -114,7 +124,7 @@ class MainFrame extends Component {
   }
 
   render() {
-    const { userID, waiting, pageType, message, menuShown } = this.state;
+    const { userID, waiting, pageType, message, menuShown, databases } = this.state;
 
     const toastOn = isvalid(message);
     const viewerOn = pageType === 'main';
@@ -127,7 +137,7 @@ class MainFrame extends Component {
         </div>
         <div className="scrollLock">
           { pageType == 'entry' && <UserSelector userID={userID} onChangeUser={this.handleChangeUser} /> }
-          { pageType == 'main' && <SQLFrame /> }
+          { pageType == 'main' && <SQLFrame databases={databases} /> }
         </div>
         { waiting &&
           <div className="blockedLayer">

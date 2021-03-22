@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import org.json.JSONObject;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderResult;
@@ -37,6 +39,8 @@ public class TomyRequestor implements HttpRequest
     private String      _uriAdj = null;
     private String      _bodyData = "";
     private String      _mimeType = null;
+    
+	private JSONObject	_jsonBody = null;
 
     
     public TomyRequestor(HttpRequest req, ChannelHandlerContext ctx)
@@ -210,7 +214,9 @@ public class TomyRequestor implements HttpRequest
     public String parameter(String paramName)
     {
         if( _params == null )
-            return null;
+        {
+            return this.bodyParameter(paramName);
+        }
 
         List<String> pList = _params.get(paramName);
         
@@ -227,6 +233,25 @@ public class TomyRequestor implements HttpRequest
     public Map<String, List<String>> parameterMap()
     {
         return _params;
+    }
+    
+    public String bodyParameter(String paramName)
+    {
+    	if( !UT.isValidString(_bodyData) )
+    		return null;
+    	
+    	try
+    	{
+	    	if( _jsonBody == null )
+	    		_jsonBody = new JSONObject(_bodyData);
+    	}
+    	catch(Exception xe)
+    	{
+    		_jsonBody = new JSONObject();
+    	}
+    	
+    	Object oVal = _jsonBody.get(paramName);
+    	return oVal == null ? null : oVal.toString();
     }
 
     @Override

@@ -24,7 +24,7 @@ class QuerySpace extends Component {
   constructor (props) {
     super(props);
 
-    const ds = new DataSource({ columnCount: 10, rowCount: 1000 });
+    const ds = new DataSource({ columnCount: 20, rowCount: 1000 });
 
     this.state = {
       gridHeight: 350,
@@ -41,7 +41,7 @@ class QuerySpace extends Component {
       const wrapper = document.getElementById('monacoSqlEditor');
 
       const properties = {
-        value: 'SELECT *\n  FROM TABLE\n WHERE COLUMN = 1\n',
+        value: 'SELECT *\n  FROM TB_TABLE\n WHERE COL1 = 1\n\nSELECT *\n  FROM TB_TABLE\n WHERE COL2 = 1\n\n',
         language: 'sql',
         automaticLayout: true,
         roundedSelection: false,
@@ -68,7 +68,6 @@ class QuerySpace extends Component {
 
   handleLayoutChanged = (from, to) => {
     const { gridHeight } = this.state;
-
     this.setState({ gridHeight: gridHeight + to - from });
   }
 
@@ -88,7 +87,6 @@ class QuerySpace extends Component {
         />
         <div className="resultPane" style={{ flexBasis:`${gridHeight}px`, height: gridHeight, width: clientWidth }}>
           <DataGrid
-            height={gridHeight}
             width={clientWidth}
             dataSource={ds}
             userBeginRow={0}

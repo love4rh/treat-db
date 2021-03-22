@@ -1,19 +1,22 @@
 import axios from 'axios';
 
-import { makeid } from '../util/tool.js';
+import { makeid, isvalid } from '../util/tool.js';
 
-export const _serverBaseUrl_ = 'http://10.186.115.136:8888';
+export const _serverBaseUrl_ = 'http://10.186.115.136:8080';
 // export const _serverBaseUrl_ = 'http://127.0.0.1:8888';
 
 const _userToken = makeid(8);
 
+const basicHeader = {
+	'Content-Type': 'application/json;charset=utf-8',
+	'x-user-token': _userToken
+};
 
-const getApi = axios.create({
+
+const GET = axios.create({
   baseURL: _serverBaseUrl_,
-  timeout: 30000,
-  headers: {
-  	'Content-Type': 'application/json;charset=utf-8'
-  }
+  timeout: 12000,
+  headers: basicHeader
 });
 
 
@@ -40,54 +43,37 @@ const apiProxy = {
 	},
 
 	test: (testString) => {
-		getApi.get('/test?testString=' + testString);
+		GET.get('/test?testString=' + testString)
+			.then(res => {
+				// to do something with res
+			})
+			.catch(err => {
+				// to do something with err
+			});
 	},
 
-	go: (logUrl, cbSuccess, cbError) => {
-		getApi.get('/inputLogPath?path=' + logUrl + '&userToken=' + _userToken) // encodeURIComponent
-		.then(res => {
-			if (cbSuccess) cbSuccess(res);
-		})
-		.catch(res => {
-			if (cbError) cbSuccess(res);
-		});
-	},
-
-	getMoreData: (dataKey, s, len, cbSuccess, cbError) => {
-		getApi.get('/logData?dataKey=' + dataKey + '&start=' + s + '&len=' + len + '&userToken=' + _userToken)
-		.then(res => {
-			if (cbSuccess) cbSuccess(res);
-		})
-		.catch(res => {
-			if (cbError) cbSuccess(res);
-		});
-	},
-
-	filterData: (dataKey, category, selected, cbSuccess, cbError) => {
+	getMetaData: (authCode, cbSuccess, cbError) => {
 		apiProxy.enterWaiting();
+		
 		axios({
 			baseURL: _serverBaseUrl_,
-			url: '/filterData',
+			url: '/metadata',
 			method: 'post',
 			timeout: 24000,
-			headers: {
-		  	'x-auth-code': _userToken,
-		  	'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
-		  },
-			data: 'dataKey=' + dataKey + '&category=' + category + '&selected=' + selected + '&userToken=' + _userToken
+			headers: basicHeader,
+			data: { authCode }
 		})
 		.then(res => {
 			apiProxy.leaveWaiting();
-			if (cbSuccess) cbSuccess(res);
+			if( isvalid(res.data) && res.data.returnCode === 0 ) {
+				if( cbSuccess ) cbSuccess(res);
+			} else if( cbError )
+			cbError(res);
 		})
 		.catch(res => {
 			apiProxy.leaveWaiting();
-			if (cbError) cbSuccess(res);
+			if( cbError ) cbSuccess(res);
 		});
-	},
-
-	downloadLogFile: (dataKey) => {
-		getApi.get('/download?dataKey=' + dataKey);
 	}
 };
 

@@ -1,5 +1,7 @@
 package com.tool4us.treatdb;
 
+import static com.tool4us.db.DatabaseTool.DBTOOL;
+
 import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
@@ -8,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.tool4us.common.AppOptions;
+import com.tool4us.common.Logs;
 
 import lib.turbok.util.UsefulTool;
 
@@ -52,6 +55,8 @@ public enum AppSetting
     private boolean     _keepOld = true;
     
     private Map<String, String>     _param = new TreeMap<String, String>();
+    
+    private JSONArray	_dbInfo = null;
 
     
     private AppSetting()
@@ -90,7 +95,7 @@ public enum AppSetting
             
             _param.put(key, value);
         }
-        
+
         _serverID = _options.getAsString("setting/id");
         _port = _options.getAsInteger("network/port", 8080);
         _bossThreadNum = _options.getAsInteger("network/bossThread", 1);
@@ -191,4 +196,36 @@ public enum AppSetting
             , dbOpt.getString("password")
         };
     }
+
+	public void refreshMetadata()
+	{
+		JSONArray dbInfo = new JSONArray();
+		
+        // name, driver, server, account, password
+    	for(int i = 0; i < sizeOfDatabase(); ++i)
+    	{
+    		try
+            {
+	            String[] dbOpt = getDatabaseOption(i);
+	            JSONArray objList = DBTOOL.getMetadata(dbOpt[1], dbOpt[2], dbOpt[3], dbOpt[4]);
+	            
+	            JSONObject dbObj = new JSONObject();
+	            dbObj.put("name", dbOpt[0]);
+	            dbObj.put("scheme", objList);
+
+	            dbInfo.put(dbObj);
+            }
+            catch(Exception xe)
+            {
+                Logs.trace(xe);
+            }
+    	}
+		
+		_dbInfo = dbInfo;
+	}
+
+	public String getMetadataAsString()
+	{
+		return _dbInfo == null ? "[]" : _dbInfo.toString();
+	}
 }

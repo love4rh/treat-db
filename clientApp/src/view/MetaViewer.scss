@@ -1,19 +1,42 @@
 
 .metaBox {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  background-color: #282923;
+  background-color: #282c34;
+}
+
+.separatorDiv {
+  height: 8px;
 }
 
 .dbSelectBox {
   width: 100%;
-  background-color: yellowgreen;
+  padding: 5px;
+  background-color: #282923;
+}
+
+.dbSelectDiv {
+  width: 100%;
+}
+
+.schemeFilterDiv {
+  width: 100%;
 }
 
 .metaDataBox {
   width: 100%;
+  background-color: #282923;
+  overflow: auto;
 }
 
 .metaTreeBox {
   color: #f8f8f2;
   font-size: 0.5rem;
+}
+
+.metaDetailaBox {
+  flex-grow: 1;
+  background-color: #282923;
+  color: white;
 }

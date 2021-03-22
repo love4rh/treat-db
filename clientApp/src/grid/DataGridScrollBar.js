@@ -7,7 +7,7 @@ import './styles.scss';
 
 
 
-export const _scrollBarWith_ = 14;
+export const _scrollBarWith_ = 9;
 
 
 const makeScrollState =  (props, state, dimChanged) => {
@@ -204,7 +204,7 @@ class DataGridScrollBar extends Component {
       thumbStyle = { top:thumbPos, left:0, width:(barWidth - adjThumb), height: thumbSize };
     } else {
       barStyle = { height:barWidth, width:barHeight };
-      thumbStyle = { top:1, left:thumbPos, width: thumbSize, height:(barWidth - adjThumb) };
+      thumbStyle = { top:0, left:thumbPos, width: thumbSize, height:(barWidth - adjThumb) };
     }
 
     /*

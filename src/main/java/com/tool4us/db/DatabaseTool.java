@@ -80,15 +80,26 @@ public enum DatabaseTool
 		return typeStringByJDBCType( UT.parseLong(typeStr).intValue() ); 
 	}
 	
-	public JSONObject getMetadata(String driver, String server, String account, String password) throws Exception
+	public Object getObjectFromJSON(JSONObject obj, String key)
+	{
+		Object retObj = null;
+		
+		try
+		{
+			retObj = obj.get(key);
+		}
+		catch( Exception xe )
+		{
+			retObj = null;
+		}
+		
+		return retObj;
+	}
+	
+	public JSONArray getMetadata(String driver, String server, String account, String password) throws Exception
 	{
         Connection conn = null;
-        JSONObject dbMeta = new JSONObject();
-        
-        dbMeta.put("table", new JSONArray());
-        dbMeta.put("view", new JSONArray());
-        dbMeta.put("alias", new JSONArray());
-        dbMeta.put("synonym", new JSONArray());
+        JSONArray objList = new JSONArray();
         
         try
         {
@@ -109,23 +120,17 @@ public enum DatabaseTool
         	
             while( resultSet.next() )
             {
-            	String tableType = resultSet.getString("TABLE_TYPE");
-            	if( !UT.isValidString(tableType) )
-            		continue;
-
-            	JSONArray list = dbMeta.getJSONArray(tableType.toLowerCase());
-            	if( list == null )
-            		continue;
-
             	JSONObject tblObj = new JSONObject();
             	
             	String tableName = resultSet.getString("TABLE_NAME");
+            	String tableType = resultSet.getString("TABLE_TYPE");
+            	String tableDesc= resultSet.getString("REMARKS");
             	String tableScheme = resultSet.getString("TABLE_SCHEM");
             	if( tableScheme == null )
             		tableScheme = resultSet.getString("TABLE_CAT");
-            	String tableDesc= resultSet.getString("REMARKS");
             	
             	tblObj.put("name", tableName);
+            	tblObj.put("type", tableType);
             	tblObj.put("scheme", UT.NVL(tableScheme, "unknown"));
             	tblObj.put("description", UT.NVL(tableDesc, " "));
 
@@ -140,15 +145,15 @@ public enum DatabaseTool
             		
             		colObj.put("name", columns.getString("COLUMN_NAME"));
             		colObj.put("type", typeStringByJDBCType(columns.getString("DATA_TYPE")));
-            		colObj.put("jdbcType", UT.parseLong(columns.getString("DATA_TYPE")));
-            		colObj.put("size", UT.parseLong(columns.getString("COLUMN_SIZE")));
+            		// colObj.put("jdbcType", UT.parseLong(columns.getString("DATA_TYPE")));
+            		// colObj.put("size", UT.parseLong(columns.getString("COLUMN_SIZE")));
             		colObj.put("nullable", "YES".equals(columns.getString("IS_NULLABLE")));
             		colObj.put("description", UT.NVL(columns.getString("REMARKS"), " "));
 
             		colList.put(colObj);
             	}
             	
-            	list.put(tblObj);                
+            	objList.put(tblObj);                
             }
         }
         catch(Exception xe)
@@ -168,6 +173,6 @@ public enum DatabaseTool
                 }
         }
         
-        return dbMeta;
+        return objList;
     }
 }

@@ -16,10 +16,10 @@ class SQLFrame extends Component {
     super(props);
 
     this.state = {
-      clientWidth: 600,
+      clientWidth: 800,
       clientHeight: 400,
       bottomHeight: 150,
-      leftWidth: 200
+      leftWidth: 300
     };
 
     this._mainDiv = React.createRef();
@@ -45,16 +45,17 @@ class SQLFrame extends Component {
     const { bottomHeight, leftWidth } = this.state;
 
     if( 'topBottom' === type ) {
-      console.log('layout top-bottom', bottomHeight, to - from);
+      // console.log('layout top-bottom', bottomHeight, to - from);
       this.setState({ bottomHeight: bottomHeight + to - from });
     } else if( 'leftRight' === type ) {
-      console.log('layout left-right', leftWidth, to - from);
+      // console.log('layout left-right', leftWidth, to - from);
       this.setState({ leftWidth: leftWidth + to - from });
     }
   }
 
   render() {
     const dividerSize = 4;
+    const { databases } = this.props;
     const { clientWidth, clientHeight, bottomHeight, leftWidth } = this.state;
 
     const mainWidth = clientWidth - leftWidth - dividerSize;
@@ -64,7 +65,7 @@ class SQLFrame extends Component {
       <div ref={this._mainDiv} className="sqlFrame">
         <div className="topPane">
           <div className="leftPane" style={{ flexBasis:`${leftWidth}px` }}>
-            <MetaViewer width={leftWidth} height={mainHeight} />
+            <MetaViewer databases={databases} width={leftWidth} height={mainHeight} />
           </div>
           <LayoutDivider direction={DividerDirection.vertical}
             size={dividerSize}
