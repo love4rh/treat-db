@@ -1,21 +1,17 @@
 import React, { Component } from 'react';
 
-import cn from 'classnames';
-
 import { isundef, isvalid, istrue, nvl, setGlobalMessageHandle } from '../util/tool.js';
-
-import { getCurrentActiveGrid } from '../grid/common.js';
-
 import { apiProxy, _serverBaseUrl_ } from '../util/apiProxy.js';
+import { Log } from '../util/Logging.js';
 
 import { BsList } from 'react-icons/bs';
-import { RiArrowGoBackFill, RiFileDownloadLine } from 'react-icons/ri';
-
 import Spinner from 'react-bootstrap/Spinner'
 import Toast from 'react-bootstrap/Toast'
 
 import UserSelector from '../view/UserSelector.js';
 import SQLFrame from '../view/SQLFrame.js';
+
+import mock from '../mock/db.json';
 
 import './MainFrame.scss';
 
@@ -100,18 +96,25 @@ class MainFrame extends Component {
     // console.log('main', 'onChangeUser', userID);
     localStorage.setItem('lastUser', userID);
 
-    // TODO 초기 데이터 로딩
+    // TODO remove test code
+    Log.i('signed in as ' + userID);
+    this.setState({ pageType:'main', databases:mock });
+
+    // 초기 데이터 로딩
+    /*
     apiProxy.getMetaData(
       '124816',
       (res) => {
-        // console.log('metadata result:', res);
+        // console.log('metadata result:', res.data.response);
+        Log.i('signed in as ' + userID);
         this.setState({ pageType:'main', databases:res.data.response });
       },
       (err) => {
         console.log('error:', err);
+        Log.w(err);
         this.showInstanceMessage('error occurrs.');
       }
-    );
+    ); // */
   }
 
   handleMenu = () => {
@@ -125,9 +128,7 @@ class MainFrame extends Component {
 
   render() {
     const { userID, waiting, pageType, message, menuShown, databases } = this.state;
-
     const toastOn = isvalid(message);
-    const viewerOn = pageType === 'main';
 
     return (
       <div className="mainWrap">

@@ -30,6 +30,14 @@ const MA = {
   SELCELL: 4
 };
 
+// Grid에서 발생하는 Event 정의
+const GridEvent = {
+  CELL_SELECTED: 1,
+  CELL_DBLCLICK: 2,
+  COLUMN_SELECTED: 3,
+  ROW_SELECTED: 4,
+}
+
 const _letterWidth_ = 12 * 8.5 / 16; // 32
 
 
@@ -46,8 +54,9 @@ class DataGrid extends Component {
     showColumnNumber: PropTypes.bool,  // 컬럼번호 표시여부. 기본값 true
     userBeginRow: PropTypes.number,  // 처음 표시할 시작 위치
     fixableCount: PropTypes.number,  // Fixed 가능한 컬럼 개수
-    height: PropTypes.number,
-    width: PropTypes.number,
+    height: PropTypes.number, // Grid의 높이. width도 같이 지정된 경우에만 적용됨
+    width: PropTypes.number,  // Grid의 너비. height도 같이 지정된 경우에만 적용됨
+    onEvent: PropTypes.func, // Grid에서 발생하는 이벤트를 전달하기 위한 속성
   }
 
   static CalcRowNumPerpage = (height, rowHeight, headerCount) => {
@@ -100,7 +109,6 @@ class DataGrid extends Component {
     };
   }
 
-
   constructor (props) {
     super(props);
 
@@ -135,8 +143,6 @@ class DataGrid extends Component {
       ...DataGrid.recalculateDimension(props, this.state, 512, 512, columnWidth)
     };
 
-    // console.log('DataGrid state', this.state);
-
     this.dataFetchJob = null;
     this._refMain = React.createRef();
 
@@ -153,25 +159,38 @@ class DataGrid extends Component {
   componentDidMount () {
     setCurrentActiveGrid(this);
 
-    if( isundef(this.props.height) || isundef(this.props.width) ) {
-      window.addEventListener('resize', this.onResize);
+    const { height, width } = this.props;
+
+    if( isvalid(height) && isvalid(width) ) {
+      this.setState( DataGrid.recalculateDimension(this.props, this.state, width, height) );
+      return;
     }
+
+    window.addEventListener('resize', this.onResize);
 
     const { clientWidth, clientHeight } = this._refMain.current;
     this.setState( DataGrid.recalculateDimension(this.props, this.state, clientWidth, clientHeight) );
   }
 
   static getDerivedStateFromProps(nextProps, prevState) {
+    let modified = false;
+    let newState = {};
+
+    if( isvalid(nextProps.height) && isvalid(nextProps.width) && nextProps.height !== prevState.clientHeight && nextProps.width !== prevState.clientWidth ) {
+      modified = true;
+      newState = DataGrid.recalculateDimension(nextProps, prevState, nextProps.width, nextProps.height);
+    } else if( prevState.dsModifiedTick !== nextProps.dataSource._modifiedTime ) {
+      modified = true;
+      newState = DataGrid.recalculateDimension(nextProps, prevState);
+    }
+
     if( prevState.userBeginRow !== nextProps.userBeginRow  ) {
-      // 변경이 필요한 것만 반환
-      return { beginRow: nextProps.userBeginRow, userBeginRow: nextProps.userBeginRow };
+      modified = true;
+      newState.beginRow = nextProps.userBeginRow;
+      newState.userBeginRow = nextProps.userBeginRow;
     }
 
-    if( prevState.dsModifiedTick !== nextProps.dataSource._modifiedTime ) {
-      return DataGrid.recalculateDimension(nextProps, prevState);
-    }
-
-    return null; // null을 리턴하면 따로 업데이트 할 것은 없다라는 의미
+    return modified ? newState : null; // null을 리턴하면 따로 업데이트 할 것은 없다라는 의미
   }
 
   // eslint-disable-next-line
@@ -433,7 +452,9 @@ class DataGrid extends Component {
     if( newBegin !== beginRow ) {
       this.setBeginRow(newBegin);
     }
+
     this.setState({ selectedRange: newPos });
+    this.relayEvent(GridEvent.CELL_SELECTED, { column:newPos.col, row:newPos.row, status:MA.SELCELL });
 
     return true;
   }
@@ -792,6 +813,7 @@ class DataGrid extends Component {
             statusParam: { colSel: cell.col, rowSel: cell.row },
             clickTick: [clickTick[1], cTick]
           });
+          this.relayEvent(GridEvent.CELL_SELECTED, { column:cell.col, row:cell.row, status:newStatus });
         }
       }
       break;
@@ -892,6 +914,29 @@ class DataGrid extends Component {
     }
 
     this.handleCloseFilter();
+  }
+
+  relayEvent = (eventType, option) => {
+    const { onEvent } = this.props;
+    if( isundef(onEvent) ) {
+      return;
+    }
+
+    switch( eventType ) {
+      case GridEvent.CELL_SELECTED: {
+        const { column, row, status } = option;
+        if( status == MA.SELCOL ) {
+          onEvent(GridEvent.COLUMN_SELECTED, { column });
+        } else if( status == MA.SELROW ) {
+          onEvent(GridEvent.ROW_SELECTED, { row });
+        } else {
+          onEvent(GridEvent.CELL_SELECTED, { column, row });
+        }
+      } break;
+
+      default:
+        break;
+    }
   }
 
   doHoldEvent = (set, c, r) => {
@@ -1243,4 +1288,4 @@ class DataGrid extends Component {
 }
 
 export default DataGrid;
-export { DataGrid };
+export { DataGrid, GridEvent };

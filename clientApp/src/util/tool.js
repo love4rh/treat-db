@@ -272,61 +272,6 @@ exports.copyObject = function(obj) {
 }
 
 
-var _logger_ = null;
-
-exports.setLogger = function(logger) {
-	_logger_ = logger;
-}
-
-
-/**
-	level --------------
-	emergency: 0,
-	alert: 1,
-	critical: 2,
-	error: 3,
-	warning: 4,
-	notice: 5,
-	info: 6,
-	...
- */
-exports.debugOut = function(m, w, o) {
-	// TODO 아래 라인 제거
-	// if( m === 'LSS') return;
-
-	var msg = o;
-	var level = 6;
-
-	if (typeof o === 'object') {
-		msg = isundef(o) ? 'undefined' : JSON.stringify(o);
-	}
-
-	console.log(new Date(), m, w, msg);
-
-	if (!isundef(_logger_)) {
-		var p = 0;
-		var limit = 768;
-		var wh = '<' + w + '> ';
-
-		/*
-		const pmloglib = {
-		  emergency: 0,
-		  alert: 1,
-		  critical: 2,
-		  error: 3,
-		  warning: 4,
-		  notice: 5,
-		  info: 6,
-		  ...
-		} // */
-		while (p < msg.length) {
-			var r = Math.min(msg.length - p, limit);
-			_logger_.log(level, m.toUpperCase(), {}, wh + msg.substring(p, p + r));
-			p += r;
-		}
-	}
-}
-
 let _globalMsgHandler_ = null;
 exports.setGlobalMessageHandle = function(handle) {
 	_globalMsgHandler_ = handle;
@@ -337,15 +282,3 @@ exports.showGlobalMessage = function(msg) {
 		_globalMsgHandler_(msg);
 	}
 }
-
-
-/*
-exports.printOut = function(m, w, o) {
-	loggingOut(6, m, w, o);
-}
-
-
-exports.debugOut = function(m, w, o) {
-	loggingOut(7, m, w, o);
-}
-// */

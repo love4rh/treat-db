@@ -1,7 +1,3 @@
-import { isvalid, nvl, numberWithCommas } from '../grid/common.js';
-
-
-
 /**
  * props: title, tables: table array(type, name, scheme, description)
  */
@@ -58,6 +54,11 @@ class SchemeDataSource {
 		}
 
     return '';
+  }
+
+  getColumnsData = (row) => {
+    const rec = this.props.tables[row];
+    return rec['columns'];
   }
 
   // eslint-disable-next-line

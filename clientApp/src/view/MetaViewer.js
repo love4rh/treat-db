@@ -11,17 +11,16 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
-import TreeView from '@material-ui/lab/TreeView';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import TreeItem from '@material-ui/lab/TreeItem';
 
 import SearchIcon from '@material-ui/icons/Search';
 
-import DataGrid from '../grid/DataGrid.js';
+import { DataGrid, GridEvent } from '../grid/DataGrid.js';
+
 import SchemeDataSource from '../data/SchemeDataSource.js';
+import ColumnDataSource from '../data/ColumnDataSource.js';
 
 import { isvalid } from '../util/tool.js';
+import { Log } from '../util/Logging.js';
 
 import './MetaViewer.scss';
 
@@ -35,7 +34,7 @@ const theme = createMuiTheme({
     // In Chinese and Japanese the characters are usually larger,
     // so a smaller fontsize may be appropriate.
     fontSize: 11,
-  },
+  }
 });
 
 
@@ -57,13 +56,16 @@ class MetaViewer extends Component {
       schemeBoxHeight: 250,
       filterText: '',
       selected: 0,
+      tableShown: -1,
       databases,
-      dsScheme: new SchemeDataSource({ title: 'TableList', tables: databases[0]['scheme'] })
+      dsScheme: new SchemeDataSource({ title: 'TableList', tables: databases[0]['scheme'] }),
+      dsColumn: null,
+      detailTab: 0 // 0: Columns, 1: Index
     };
   }
 
   componentDidMount() {
-    //
+    this.showTableColumn(0);
   }
 
   componentWillUnmount() {
@@ -82,7 +84,9 @@ class MetaViewer extends Component {
     const idx = ev.target.value;
     const { databases } = this.state;
     const ds = new SchemeDataSource({ title: 'TableList', tables: databases[idx]['scheme'] });
-    this.setState({ selected: idx, filterText: '', dsScheme: ds });
+
+    this.setState({ selected: idx, filterText: '', dsScheme: ds, tableShown: 0 });
+    Log.i('Database changed to "' + databases[idx]['name'] + '"');
   }
 
   handleFilterChange = (ev) => {
@@ -94,7 +98,7 @@ class MetaViewer extends Component {
 
     const ds = new SchemeDataSource({
       title: 'TableList',
-      tables: metaList.filter((m, i) => value == '' || pattern.test(m.name) || pattern.test(m.description))
+      tables: metaList.filter((m) => value == '' || pattern.test(m.name) || pattern.test(m.description))
     });
 
     this.setState({ filterText: value, dsScheme: ds });
@@ -105,9 +109,33 @@ class MetaViewer extends Component {
     this.setState({ schemeBoxHeight: schemeBoxHeight + from - to });
   }
 
+  handleSchemeGridEvent = (eventType, option) => {
+    // console.log('handleSchemeGrid', eventType, option);
+    if( eventType === GridEvent.CELL_SELECTED && isvalid(option) ) {
+      this.showTableColumn(option.row);
+    }
+  }
+
+  showTableColumn = (idx) => {
+    const { tableShown, dsScheme } = this.state;
+    if( tableShown !== idx ) {
+      const ds = new ColumnDataSource({ title: 'ColumnList', columns: dsScheme.getColumnsData(idx) })
+      this.setState({ tableShown: idx, dsColumn: ds });
+    }
+  }
+
+  handleColumnGridEvent = (eventType, option) => {
+    console.log('handleColumnGridEvent', eventType, option);
+  }
+
+  handleTabChange = (ev, newTab) => {
+    this.setState({ detailTab: newTab });
+  }
+
   render() {
-    const dividerSize = 4;
-    const { clientWidth, schemeBoxHeight, databases, selected, filterText, dsScheme } = this.state;
+    const dividerSize = 4, optionBoxHeight = 98;;
+    const { clientHeight, clientWidth, schemeBoxHeight, databases, selected, filterText, dsScheme, dsColumn, detailTab } = this.state;
+    const columnBoxHeight = clientHeight - dividerSize - optionBoxHeight - schemeBoxHeight;
 
     return (
       <div className="metaBox" style={{ width:clientWidth }}>
@@ -141,20 +169,36 @@ class MetaViewer extends Component {
           <div className="separatorDiv">&nbsp;</div>
         </div>
         <div className="metaDataBox" style={{ flexBasis:schemeBoxHeight }}>
-        <DataGrid
-            width={clientWidth}
-            dataSource={dsScheme}
-            showRowNumber={false}
-            showColumnNumber={false}
-            userBeginRow={0}
-          />
+          { isvalid(dsScheme) &&
+            <DataGrid
+              height={schemeBoxHeight}
+              width={clientWidth}
+              dataSource={dsScheme}
+              showRowNumber={false}
+              showColumnNumber={false}
+              userBeginRow={0}
+              onEvent={this.handleSchemeGridEvent}
+            />
+          }
         </div>
         <LayoutDivider direction={DividerDirection.horizontal}
           size={dividerSize}
           onLayoutChange={this.handleLayoutChanged}
         />
         <div className="metaDetailaBox">
-          Detail
+          { isvalid(dsColumn) && detailTab === 0 &&
+            <DataGrid
+              height={columnBoxHeight}
+              width={clientWidth}
+              dataSource={dsColumn}
+              showColumnNumber={false}
+              userBeginRow={0}
+              onEvent={this.handleColumnGridEvent}
+            />
+          }
+          { detailTab === 1 &&
+            <div>implementing...</div>
+          }
         </div>
       </div>
     );

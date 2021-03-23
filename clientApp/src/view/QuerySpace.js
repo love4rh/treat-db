@@ -7,7 +7,6 @@ import loader from "@monaco-editor/loader";
 
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
-import DiosDataSource from '../grid/DiosDataSource.js';
 import DataSource from '../grid/DataSource.js';
 import DataGrid from '../grid/DataGrid.js';
 
@@ -50,7 +49,6 @@ class QuerySpace extends Component {
       }
 
       this._editor = monaco.editor.create(wrapper, properties);
-      console.log(this._editor.getRawOptions());
     });
   }
 

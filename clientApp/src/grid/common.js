@@ -65,6 +65,29 @@ export const tickCount = () => {
 }
 
 
+export const pad2 = (n) => {
+  return (n < 10 ? '0' : '') + n;
+}
+
+
+export const pad3 = (n) => {
+  return ((n < 10 ? '00' : (n < 100 ? '0' : '')) + n);
+}
+
+
+export const dateToString = (dt) => {
+  const MM = dt.getMonth() + 1; // getMonth() is zero-based
+  const dd = dt.getDate();
+  const hh = dt.getHours();
+  const mm = dt.getMinutes();
+  const ss = dt.getSeconds();
+  const mi = dt.getMilliseconds();
+
+  return [ dt.getFullYear(), pad2(MM), pad2(dd) ].join('-')
+    + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + '.' + pad3(mi);
+}
+
+
 export const binarySearch = (sorted, target, compare) => {
   let l = 0, h = sorted.length - 1;
 

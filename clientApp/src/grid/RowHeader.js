@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import cn from 'classnames';
 import { numberWithCommas } from './common.js';
-import { DataCell } from './DataRecord.js';
+import { DataCell } from './DataCell.js';
 
 import './styles.scss';
 

@@ -73,6 +73,7 @@ class LayoutDivider extends React.Component {
   }
 
   render () {
+    const borderColor = '#2ea8bf';
     const size = this.props.size ? this.props.size : 7;
 
     let mainCss, dragCss;
@@ -82,6 +83,7 @@ class LayoutDivider extends React.Component {
         flexBasis:size,
         width:`${size}px`,
         height:'100%',
+        borderLeft: `1px solid ${borderColor}`,
         cursor:'ew-resize'
       };
 
@@ -98,6 +100,7 @@ class LayoutDivider extends React.Component {
         flexBasis:size,
         height:`${size}px`,
         width:'100%',
+        borderTop: `1px solid ${borderColor}`,
         cursor:'ns-resize'
       };
 

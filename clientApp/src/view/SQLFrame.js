@@ -6,6 +6,7 @@ import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
 import MetaViewer from '../view/MetaViewer.js';
 import QuerySpace from '../view/QuerySpace.js';
+import ConsoleView from '../view/ConsoleView.js';
 
 import './SQLFrame.scss';
 
@@ -80,7 +81,7 @@ class SQLFrame extends Component {
           onLayoutChange={this.handleLayoutChanged('topBottom')}
         />
         <div className="bottomPane" style={{ flexBasis:`${bottomHeight}px` }}>
-          Console
+          <ConsoleView width={clientWidth} height={bottomHeight} />
         </div>
       </div>
     );
