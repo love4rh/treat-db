@@ -1,5 +1,4 @@
-import { isundef, isvalid } from '../util/tool.js';
-import { dateToString } from '../grid/common.js';
+import { isundef, isvalid, makeid, dateToString } from '../grid/common.js';
 
 
 const LogType = {
@@ -14,7 +13,36 @@ const LogType = {
 const Log = {
 	_limit_: 1024,
 	_list_: [],
-	_listner_: {},
+	_listener_: {},
+
+	/**
+	 * 로그 이벤트를 받았을 때 호출할 이벤트 핸들러 등록.
+	 * @param {function} func 이벤트 핸들러. func()
+	 * @returns receiver id
+	 */
+	addReceiver: (func) => {
+		const rid = makeid(16);
+		Log._listener_[rid] = func;
+		return rid;
+	},
+
+	/**
+	 * 로그 이벤트 핸들러 제거
+	 * @param {string} rid addReceiver() 호출 시 받은 ID
+	 * @returns 
+	 */
+	removeReceiver: (rid) => {
+		if( isundef(Log._listener_[rid]) ) {
+			return;
+		}
+		delete Log._listener_[rid];
+	},
+
+	_broadcast: () => {
+		for(let rid in Log._listener_) {
+			Log._listener_[rid](); // TODO 이벤트 정보를 넘겨야 하나?
+		}
+	},
 	
 	_add: (item) => {
 		if( isundef(item) ) {
@@ -26,9 +54,9 @@ const Log = {
 		}
 
 		item.time = dateToString(new Date());
-		Log._list_.push(item);
 
-		console.log('Log:', item);
+		Log._list_.push(item);
+		Log._broadcast();
 	},
 
 	i: (msg) => {

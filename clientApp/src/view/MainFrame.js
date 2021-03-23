@@ -97,7 +97,7 @@ class MainFrame extends Component {
     localStorage.setItem('lastUser', userID);
 
     // TODO remove test code
-    Log.i('signed in as ' + userID);
+    Log.i('signed in with ' + userID);
     this.setState({ pageType:'main', databases:mock });
 
     // 초기 데이터 로딩
@@ -106,7 +106,7 @@ class MainFrame extends Component {
       '124816',
       (res) => {
         // console.log('metadata result:', res.data.response);
-        Log.i('signed in as ' + userID);
+        Log.i('signed in with ' + userID);
         this.setState({ pageType:'main', databases:res.data.response });
       },
       (err) => {

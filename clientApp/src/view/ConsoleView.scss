@@ -1,8 +1,32 @@
+$clrDebug: #90918b;
+$clrNormal: #f8f8f2;
+$clrWarn: #e7db74;
+$clrError: #fd9622;
+$clrFatal: #f92472;
 
 .consoleBox {
-  width: 100%;
-  height: 100%;
   background-color: #1e1f1c;
   color: whitesmoke;
   font-size: 12px;
+  padding: 5px;
+}
+
+.consoleItem0 {
+  color: $clrDebug;
+}
+
+.consoleItem1 {
+  color: $clrNormal;
+}
+
+.consoleItem2 {
+  color: $clrWarn;
+}
+
+.consoleItem3 {
+  color: $clrError;
+}
+
+.consoleItem4 {
+  color: $clrFatal;
 }

@@ -84,9 +84,15 @@ export const dateToString = (dt) => {
   const mi = dt.getMilliseconds();
 
   return [ dt.getFullYear(), pad2(MM), pad2(dd) ].join('-')
-    + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + '.' + pad3(mi);
+    + ' ' + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + '.' + pad3(mi);
 }
 
+// [min, max] 내 임의의 숫자 반환
+export const genRandomInteger = (min, max) => {
+  min = Math.ceil(min);
+  max = Math.floor(max) + 1;
+  return Math.floor(Math.random() * (max - min)) + min;
+}
 
 export const binarySearch = (sorted, target, compare) => {
   let l = 0, h = sorted.length - 1;
