@@ -13,6 +13,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import lib.turbok.common.ValueType;
+import lib.turbok.data.Columns;
+import lib.turbok.data.FileMapStore;
+import lib.turbok.data.TabularDataCreator;
 import lib.turbok.task.ITaskMonitor;
 
 import static com.tool4us.common.Util.UT;
@@ -84,6 +87,58 @@ public enum DatabaseTool
 	{
 		return typeStringByJDBCType( UT.parseLong(typeStr).intValue() ); 
 	}
+	
+	public ValueType valueTypeByJDBCType(int type)
+    {
+        switch( type )
+        {
+        case Types.BIT:
+        case Types.TINYINT:
+        case Types.SMALLINT:
+        case Types.INTEGER:
+        case Types.BIGINT:
+        case Types.FLOAT:
+            return ValueType.Integer;
+            
+        case Types.REAL:
+        case Types.DOUBLE:
+        case Types.NUMERIC:
+        case Types.DECIMAL:
+            return ValueType.Real;
+            
+        case Types.DATE:
+        case Types.TIME:
+        case Types.TIMESTAMP:
+            return ValueType.DateTime;
+            
+        case Types.BOOLEAN:
+        case Types.CHAR:
+        case Types.VARCHAR:
+        case Types.LONGVARCHAR:
+        case Types.BINARY:
+        case Types.VARBINARY:
+        case Types.LONGVARBINARY:
+        case Types.NULL:
+        case Types.OTHER:
+        case Types.JAVA_OBJECT:
+        case Types.DISTINCT:
+        case Types.STRUCT:
+        case Types.ARRAY:
+        case Types.BLOB:
+        case Types.CLOB:
+        case Types.REF:
+        case Types.DATALINK:
+        case Types.ROWID:
+        case Types.NCHAR:
+        case Types.NVARCHAR:
+        case Types.LONGNVARCHAR:
+        case Types.NCLOB:
+        case Types.SQLXML:
+            
+        default:
+            return ValueType.Text;
+        }
+    }
 	
 	public Object getObjectFromJSON(JSONObject obj, String key)
 	{
@@ -183,8 +238,6 @@ public enum DatabaseTool
 	
 	public JSONObject executeQuery(String query, String driver, String server, String account, String password) throws Exception
 	{
-	    boolean noData = true;   // 페치된 데이터가 있는 지 여부
-
 	    Class.forName(driver);
 	    Connection conn = DriverManager.getConnection(server, account, password);
 
@@ -195,68 +248,52 @@ public enum DatabaseTool
         if( isMySQL )
             stmt.setFetchSize(Integer.MIN_VALUE);
 
-        ResultSet rs = stmt.executeQuery(query);
-        rs.setFetchSize(2048);    // CHECK 이 값이 너무 크면 이상한 오류가 남.
+        ResultSet rs = null;
         
-        ResultSetMetaData rsMeta = rs.getMetaData();
-                
-        int columnSize = rsMeta.getColumnCount();
+        long insRow = 0;
+        FileMapStore resultData = null;
         
-        for(int c = 1; c <= columnSize; ++c)
+        try
         {
-            rsMeta.getColumnName(c);
-            rsMeta.getColumnType(c);
-        }
+            rs = stmt.executeQuery(query);
+            rs.setFetchSize(2048);    // CHECK 이 값이 너무 크면 이상한 오류가 남.
+            
+            ResultSetMetaData rsMeta = rs.getMetaData();
+                    
+            int columnSize = rsMeta.getColumnCount();
+            Columns columns = new Columns();
+            
+            for(int c = 1; c <= columnSize; ++c)
+            {
+                String columnName = rsMeta.getColumnName(c);
+                ValueType vType = valueTypeByJDBCType(rsMeta.getColumnType(c));
+                
+                columns.addColumn(columnName, vType);
+            }
+            
+            resultData = TabularDataCreator.newTabularData(columns, 1024);
 
-        /*
-
-                for(int c = 1; c <= colSize; ++c)
+            while( rs.next() )
+            {
+                for(int c = 1; c <= columnSize; ++c)
                 {
-                    if( !ValueType.isSameType( columns.getColumnType(c - 1)
-                            , ValueType.getTypeFromJDBCTypes(rs.getMetaData().getColumnType(c)) ) )
-                    {
-                        rs.close();
-                        dbConn.close();
-                        LogMessage.writeError( "DBInputTask", "Column [" + c + "]'s type is different from the query's scheme." );
-                        return;
-                    }
+                    resultData.setCell(c - 1, insRow, rs.getString(c));
                 }
                 
-                ITaskMonitor monitor = this.getTaskMonitor();
-                
-                long insRow = 0;
-                while( rs.next() )
-                {
-                    for(int c = 1; c <= colSize; ++c)
-                    {
-                        resultData.setCell(c - 1, insRow, rs.getString(c));
-                    }
-                    
-                    ++insRow;
-                    
-                    if( monitor != null )
-                    {
-                        if( !monitor.OnProgress(this, insRow) || !monitor.isContinuing(this) )
-                            break;
-                    }
-                }
-                
-                noData = insRow == 0;
-                
-                rs.close();
+                ++insRow;
             }
         }
-        catch( Exception e )
+        catch(Exception xe)
         {
-            e.printStackTrace();
-            LogMessage.writeError( "DBInputTask", e.getMessage() + " [" + qry + "]" );
+            throw xe;
         }
         finally
-        {       
-            dbConn.close();
+        {
+            if( rs != null )
+                rs.close();
+            if( conn != null )
+                conn.close();
         }
-        
-        // */
 	    
 	    return null;
 	}
