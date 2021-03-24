@@ -1,7 +1,5 @@
 import React, { Component } from 'react';
 
-import cn from 'classnames';
-
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
 import MetaViewer from '../view/MetaViewer.js';

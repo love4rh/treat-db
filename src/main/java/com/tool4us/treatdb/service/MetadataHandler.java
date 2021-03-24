@@ -16,13 +16,14 @@ public class MetadataHandler extends ApiHandler
     @Override
     public String call(TomyRequestor req, TomyResponse res) throws Exception
     {
-        String authCode = req.getParameter("authCode");
+    	String userToken = req.getHeaderValue("x-user-token");
+        String authCode = req.getHeaderValue("x-auth-code");
         
         // 값 존재 여부 체크
-        if( emptyCheck(authCode) )
+        if( emptyCheck(authCode, userToken) )
         {
             // 없다면 파라미터 오류 반환
-            return makeResponseJson(ApiError.MissingParameter);
+            return makeResponseJson(ApiError.InvalidAuthCode);
         }
 
         return makeResponseJson(OPT.getMetadataAsString());

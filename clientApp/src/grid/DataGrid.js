@@ -925,9 +925,9 @@ class DataGrid extends Component {
     switch( eventType ) {
       case GridEvent.CELL_SELECTED: {
         const { column, row, status } = option;
-        if( status == MA.SELCOL ) {
+        if( status === MA.SELCOL ) {
           onEvent(GridEvent.COLUMN_SELECTED, { column });
-        } else if( status == MA.SELROW ) {
+        } else if( status === MA.SELROW ) {
           onEvent(GridEvent.ROW_SELECTED, { row });
         } else {
           onEvent(GridEvent.CELL_SELECTED, { column, row });

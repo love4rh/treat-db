@@ -21,6 +21,7 @@ import ColumnDataSource from '../data/ColumnDataSource.js';
 
 import { isvalid } from '../util/tool.js';
 import { Log } from '../util/Logging.js';
+import { AppData } from '../data/AppData.js';
 
 import './MetaViewer.scss';
 
@@ -86,6 +87,8 @@ class MetaViewer extends Component {
     const ds = new SchemeDataSource({ title: 'TableList', tables: databases[idx]['scheme'] });
 
     this.setState({ selected: idx, filterText: '', dsScheme: ds, tableShown: 0 });
+    AppData.setDatabase(idx);
+
     Log.i('Database changed to "' + databases[idx]['name'] + '"');
   }
 
@@ -98,7 +101,7 @@ class MetaViewer extends Component {
 
     const ds = new SchemeDataSource({
       title: 'TableList',
-      tables: metaList.filter((m) => value == '' || pattern.test(m.name) || pattern.test(m.description))
+      tables: metaList.filter((m) => value === '' || pattern.test(m.name) || pattern.test(m.description))
     });
 
     this.setState({ filterText: value, dsScheme: ds });
@@ -125,7 +128,7 @@ class MetaViewer extends Component {
   }
 
   handleColumnGridEvent = (eventType, option) => {
-    console.log('handleColumnGridEvent', eventType, option);
+    // console.log('handleColumnGridEvent', eventType, option);
   }
 
   handleTabChange = (ev, newTab) => {

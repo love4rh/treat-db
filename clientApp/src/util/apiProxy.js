@@ -52,6 +52,34 @@ const apiProxy = {
 			});
 	},
 
+  signIn: (userID, password, cbSuccess, cbError) => {
+    apiProxy.enterWaiting();
+		
+		axios({
+			baseURL: _serverBaseUrl_,
+			url: '/checkAuthority',
+			method: 'post',
+			timeout: 4000,
+			headers: basicHeader,
+			data: { userID, password }
+		})
+		.then(res => {
+			apiProxy.leaveWaiting();
+      const data = res.data;
+      console.log('signIn', res);
+			if( isvalid(data) && data.returnCode === 0 ) {
+        basicHeader['x-auth-code'] = data.response.authCode;
+				if( cbSuccess ) cbSuccess(data);
+			} else if( cbError ) {
+			  cbError(res);
+      }
+		})
+		.catch(res => {
+			apiProxy.leaveWaiting();
+			if( cbError ) cbSuccess(res);
+		});
+  },
+
 	getMetaData: (authCode, cbSuccess, cbError) => {
 		apiProxy.enterWaiting();
 		
@@ -66,15 +94,41 @@ const apiProxy = {
 		.then(res => {
 			apiProxy.leaveWaiting();
 			if( isvalid(res.data) && res.data.returnCode === 0 ) {
-				if( cbSuccess ) cbSuccess(res);
-			} else if( cbError )
-			cbError(res);
+				if( cbSuccess ) cbSuccess(res.data);
+			} else if( cbError ) {
+			  cbError(res);
+      }
 		})
 		.catch(res => {
 			apiProxy.leaveWaiting();
 			if( cbError ) cbSuccess(res);
 		});
-	}
+	},
+
+  executeQuery: (dbIdx, query, cbSuccess, cbError) => {
+		apiProxy.enterWaiting();
+		
+		axios({
+			baseURL: _serverBaseUrl_,
+			url: '/executeSql',
+			method: 'post',
+			timeout: 60000,
+			headers: basicHeader,
+			data: { dbIdx, query }
+		})
+		.then(res => {
+			apiProxy.leaveWaiting();
+			if( isvalid(res.data) && res.data.returnCode === 0 ) {
+				if( cbSuccess ) cbSuccess(res.data);
+			} else if( cbError ) {
+			  cbError(res);
+      }
+		})
+		.catch(res => {
+			apiProxy.leaveWaiting();
+			if( cbError ) cbSuccess(res);
+		});
+	},
 };
 
 export default apiProxy;

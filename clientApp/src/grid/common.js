@@ -150,6 +150,11 @@ export const makeRowFilter = (ds, cb) => {
 }
 
 
+export const makeOneLine = (str) => {
+  return str.replace('\n', ' ');
+}
+
+
 // 현재 Active 상태인 그리드
 let _currentActiveGrid = null;
 

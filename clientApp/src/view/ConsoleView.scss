@@ -3,12 +3,27 @@ $clrNormal: #f8f8f2;
 $clrWarn: #e7db74;
 $clrError: #fd9622;
 $clrFatal: #f92472;
+$clrNotice: #5ed8ef;
 
 .consoleBox {
+  display: flex;
+  flex-direction: row;
   background-color: #1e1f1c;
+}
+
+.consoleLogDiv {
   color: whitesmoke;
-  font-size: 12px;
-  padding: 5px;
+  padding: 2px;
+  overflow: auto;
+}
+
+.consoleItem {
+  height: 20px;
+  font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .consoleItem0 {
@@ -29,4 +44,8 @@ $clrFatal: #f92472;
 
 .consoleItem4 {
   color: $clrFatal;
+}
+
+.consoleItem5 {
+  color: $clrNotice;
 }

@@ -1,14 +1,19 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-// import cn from 'classnames';
+import { isundef, nvl, makeOneLine } from '../grid/common.js';
 
 import loader from "@monaco-editor/loader";
+import { apiProxy } from '../util/apiProxy.js';
 
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
-import DataSource from '../grid/DataSource.js';
 import DataGrid from '../grid/DataGrid.js';
+
+import GuideDataSource from '../data/GuideDataSource.js';
+
+import { Log } from '../util/Logging.js';
+import { AppData } from '../data/AppData.js';
 
 import './QuerySpace.scss';
 
@@ -23,7 +28,7 @@ class QuerySpace extends Component {
   constructor (props) {
     super(props);
 
-    const ds = new DataSource({ columnCount: 20, rowCount: 1000 });
+    const ds = new GuideDataSource();
 
     this.state = {
       gridHeight: 350,
@@ -38,9 +43,10 @@ class QuerySpace extends Component {
   componentDidMount() {
     loader.init().then(monaco => {
       const wrapper = document.getElementById('monacoSqlEditor');
+      const textValue = localStorage.getItem('latestQuery');
 
       const properties = {
-        value: 'SELECT *\n  FROM TB_TABLE\n WHERE COL1 = 1\n\nSELECT *\n  FROM TB_TABLE\n WHERE COL2 = 1\n\n',
+        value: nvl(textValue, ''),
         language: 'sql',
         automaticLayout: true,
         roundedSelection: false,
@@ -64,9 +70,77 @@ class QuerySpace extends Component {
     return null;
   }
 
+  extractQueryBlock = (text, pos) => {
+    if( isundef(text) || isundef(pos) ) {
+      return null;
+    }
+
+    let { lineNumber } = pos;
+    const lines = text.split('\n');
+
+    if( isundef(lineNumber) || lineNumber < 1 || lineNumber > lines.length ) {
+      return null;
+    }
+
+    lineNumber -= 1; // 0-based;
+
+    let s = lineNumber - 1;
+    while( s >= 0 ) {
+      const str = lines[s].trim();
+      if( str === '' || str.endsWith(';') ) {
+        break;
+      }
+      s -= 1;
+    }
+    s += 1;
+
+    let e = lineNumber;
+    while( e < lines.length ) {
+      const str = lines[e].trim();
+      if( str === '' ) {
+        break;
+      } else if( str.endsWith(';') ) {
+        e += 1;
+        break;
+      }
+      e += 1;
+    }
+
+    return lines.slice(s, e).join('\n');
+  }
+
   handleLayoutChanged = (from, to) => {
     const { gridHeight } = this.state;
     this.setState({ gridHeight: gridHeight + to - from });
+  }
+
+  handleEditorKeyDown = (ev) => {
+    // console.log('handleEditorKeyDown', ev.keyCode, ev.key, ev.ctrlKey, ev.altKey, ev.shiftKey, ev.repeat);
+
+    // shift + enter --> 쿼리 실행
+    if( ev.shiftKey && ev.keyCode === 13 ) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const textValue = this._editor.getValue();
+      const query = this.extractQueryBlock(textValue, this._editor.getPosition());
+
+      localStorage.setItem('latestQuery', textValue);
+
+      if( isundef(query) || query.trim() === '' ) {
+        Log.w('invalid query statements');
+      } else {
+        Log.n('executing [' + makeOneLine(query) + ']');
+
+        apiProxy.executeQuery(AppData.getDatabase(), query,
+          (res) => {
+            console.log('query execute', res);
+          },
+          (err) => {
+            console.log('query error', err);
+          }
+        );
+      }
+    }
   }
 
   render() {
@@ -77,7 +151,11 @@ class QuerySpace extends Component {
     return (
       <div className="queryBox">
         <div className="editorPane" style={{ flexBasis:`${editorHeight}px` }}>
-          <div id="monacoSqlEditor" style={{ height: editorHeight, width: clientWidth }} />
+          <div
+            id="monacoSqlEditor"
+            style={{ height: editorHeight, width: clientWidth }}
+            onKeyDown={this.handleEditorKeyDown}
+          />
         </div>
         <LayoutDivider direction={DividerDirection.horizontal}
           size={dividerSize}

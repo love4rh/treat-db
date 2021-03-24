@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
-import { isundef, isvalid, istrue, nvl, setGlobalMessageHandle } from '../util/tool.js';
-import { apiProxy, _serverBaseUrl_ } from '../util/apiProxy.js';
+import { isundef, isvalid, setGlobalMessageHandle } from '../util/tool.js';
+import { apiProxy } from '../util/apiProxy.js';
 import { Log } from '../util/Logging.js';
 
 import { BsList } from 'react-icons/bs';
@@ -11,7 +11,7 @@ import Toast from 'react-bootstrap/Toast'
 import UserSelector from '../view/UserSelector.js';
 import SQLFrame from '../view/SQLFrame.js';
 
-import mock from '../mock/db.json';
+// import mock from '../mock/db.json';
 
 import './MainFrame.scss';
 
@@ -72,7 +72,24 @@ class MainFrame extends Component {
     this.setState({ waiting: false });
   }
 
-  handleChangeUser = (userID, authCode) => {
+  refreshMetaData = () => {
+    // this.setState({ pageType:'main', databases:mock });
+
+    //*
+    apiProxy.getMetaData('124816',
+      (res) => {
+        // console.log('metadata result:', res.data.response);
+        this.setState({ pageType:'main', databases:res.response });
+      },
+      (err) => {
+        console.log('error:', err);
+        Log.w(err);
+        this.showInstanceMessage('error occurrs.');
+      }
+    ); // */
+  }
+
+  handleChangeUser = (userID, password) => {
     if( isundef(userID) ) {
       this.showInstanceMessage('invalid indentifier.');
       return;
@@ -96,25 +113,15 @@ class MainFrame extends Component {
     // console.log('main', 'onChangeUser', userID);
     localStorage.setItem('lastUser', userID);
 
-    // TODO remove test code
-    Log.i('signed in with ' + userID);
-    this.setState({ pageType:'main', databases:mock });
-
-    // 초기 데이터 로딩
-    /*
-    apiProxy.getMetaData(
-      '124816',
+    apiProxy.signIn(userID, password,
       (res) => {
-        // console.log('metadata result:', res.data.response);
         Log.i('signed in with ' + userID);
-        this.setState({ pageType:'main', databases:res.data.response });
+        this.refreshMetaData();
       },
       (err) => {
         console.log('error:', err);
-        Log.w(err);
-        this.showInstanceMessage('error occurrs.');
       }
-    ); // */
+    );
   }
 
   handleMenu = () => {
@@ -137,8 +144,8 @@ class MainFrame extends Component {
           <div className="mainTitle">{this.props.appTitle}</div>
         </div>
         <div className="scrollLock">
-          { pageType == 'entry' && <UserSelector userID={userID} onChangeUser={this.handleChangeUser} /> }
-          { pageType == 'main' && <SQLFrame databases={databases} /> }
+          { pageType === 'entry' && <UserSelector userID={userID} onChangeUser={this.handleChangeUser} /> }
+          { pageType === 'main' && <SQLFrame databases={databases} /> }
         </div>
         { waiting &&
           <div className="blockedLayer">

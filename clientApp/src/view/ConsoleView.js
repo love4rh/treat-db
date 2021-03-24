@@ -4,8 +4,10 @@ import PropTypes from 'prop-types';
 // import cn from 'classnames';
 
 import { tickCount } from '../grid/common.js';
-
 import { Log } from '../util/Logging.js';
+
+// eslint-disable-next-line
+import { DataGridScrollBar, _scrollBarWith_ } from '../grid/DataGridScrollBar.js';
 
 import './ConsoleView.scss';
 
@@ -27,10 +29,20 @@ class ConsoleView extends Component {
     };
 
     this._logRID = null;
+    this._lastUpdateTick = 0;
+    this._logDiv = React.createRef();
   }
 
   componentDidMount() {
     this._logRID = Log.addReceiver(this.onReceiveLog);
+  }
+
+  // eslint-disable-next-line
+  componentDidUpdate(prevProps, prevState) {
+    if( this._lastUpdateTick < prevState.redrawKey ) {
+      this._lastUpdateTick = prevState.redrawKey;
+      this._logDiv.current.scrollTop = Log.size() * 20;
+    }
   }
 
   componentWillUnmount() {
@@ -45,8 +57,41 @@ class ConsoleView extends Component {
     return null;
   }
 
-  onReceiveLog = () => {
+  // eslint-disable-next-line
+  onReceiveLog = (item) => {
     this.setState({ redrawKey: tickCount() });
+  }
+
+  handleVScrollChanged = (type, start) => {
+    console.log('handleVScrollChanged', type, start);
+
+    this._logDiv.current.scrollTop = start * 22;
+
+    /*
+    const { beginRow, rowPerHeight } = this.state;
+    let newBegin = beginRow;
+
+    switch( type ) {
+      case 'position':
+        newBegin = start;
+        break;
+
+      case 'pageup':
+        newBegin = Math.max(0, beginRow - rowPerHeight + 1);
+        break;
+
+      case 'pagedown':
+        newBegin = beginRow + rowPerHeight - 1;
+        break;
+
+      default:
+        break;
+    }
+
+    if( newBegin !== beginRow ) {
+      this.setBeginRow(newBegin);
+    }
+    // */
   }
 
   render() {
@@ -55,9 +100,26 @@ class ConsoleView extends Component {
     // list of { time(s), text(s), type(n) 0, 1(i), 2, 3, 4 }
     const logList = Log.get();
 
+    const sbWidth = 0; // _scrollBarWith_;
+    const visibleCount = Math.ceil((clientHeight - 4) / 22); // (clientHeight - padding) / item height(22)
+    const vScroll = false; // logList.length > visibleCount;
+
     return (
       <div className="consoleBox" style={{ width:clientWidth, height:clientHeight }}>
-        { logList.map((o, i) => (<div key={`${o.time}-${i}`} className={`consoleItem${o.type}`}>{ `[${o.time}] ${o.text}` }</div>)) }
+        <div ref={this._logDiv} className="consoleLogDiv" style={{ width:(clientWidth - sbWidth), height:clientHeight }}>
+          { logList.map((o, i) => (<div key={`${o.time}-${i}`} className={`consoleItem consoleItem${o.type}`}>{ `[${o.time}] ${o.text}` }</div>)) }
+        </div>
+        { vScroll &&
+          <DataGridScrollBar
+            barHeight={clientHeight}
+            barWidth={sbWidth}
+            vertical={true}
+            onPositionChanged={this.handleVScrollChanged}
+            initialPosition={Math.max(logList.length - visibleCount, 0)}
+            visibleCount={visibleCount}
+            total={logList.length}
+          />
+        }
       </div>
     );
   }

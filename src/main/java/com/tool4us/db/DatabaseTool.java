@@ -4,11 +4,16 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import lib.turbok.common.ValueType;
+import lib.turbok.task.ITaskMonitor;
 
 import static com.tool4us.common.Util.UT;
 
@@ -175,4 +180,84 @@ public enum DatabaseTool
         
         return objList;
     }
+	
+	public JSONObject executeQuery(String query, String driver, String server, String account, String password) throws Exception
+	{
+	    boolean noData = true;   // 페치된 데이터가 있는 지 여부
+
+	    Class.forName(driver);
+	    Connection conn = DriverManager.getConnection(server, account, password);
+
+        Statement stmt = conn.createStatement();
+        
+        boolean isMySQL = driver.contains("mysql");
+        
+        if( isMySQL )
+            stmt.setFetchSize(Integer.MIN_VALUE);
+
+        ResultSet rs = stmt.executeQuery(query);
+        rs.setFetchSize(2048);    // CHECK 이 값이 너무 크면 이상한 오류가 남.
+        
+        ResultSetMetaData rsMeta = rs.getMetaData();
+                
+        int columnSize = rsMeta.getColumnCount();
+        
+        for(int c = 1; c <= columnSize; ++c)
+        {
+            rsMeta.getColumnName(c);
+            rsMeta.getColumnType(c);
+        }
+
+        /*
+
+                for(int c = 1; c <= colSize; ++c)
+                {
+                    if( !ValueType.isSameType( columns.getColumnType(c - 1)
+                            , ValueType.getTypeFromJDBCTypes(rs.getMetaData().getColumnType(c)) ) )
+                    {
+                        rs.close();
+                        dbConn.close();
+                        LogMessage.writeError( "DBInputTask", "Column [" + c + "]'s type is different from the query's scheme." );
+                        return;
+                    }
+                }
+                
+                ITaskMonitor monitor = this.getTaskMonitor();
+                
+                long insRow = 0;
+                while( rs.next() )
+                {
+                    for(int c = 1; c <= colSize; ++c)
+                    {
+                        resultData.setCell(c - 1, insRow, rs.getString(c));
+                    }
+                    
+                    ++insRow;
+                    
+                    if( monitor != null )
+                    {
+                        if( !monitor.OnProgress(this, insRow) || !monitor.isContinuing(this) )
+                            break;
+                    }
+                }
+                
+                noData = insRow == 0;
+                
+                rs.close();
+            }
+        }
+        catch( Exception e )
+        {
+            e.printStackTrace();
+            LogMessage.writeError( "DBInputTask", e.getMessage() + " [" + qry + "]" );
+        }
+        finally
+        {       
+            dbConn.close();
+        }
+        
+        // */
+	    
+	    return null;
+	}
 }

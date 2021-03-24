@@ -6,7 +6,8 @@ const LogType = {
 	INFO: 1,
 	WARN: 2,
 	ERROR: 3,
-	FATAL: 4
+	FATAL: 4,
+	NOTICE: 5,
 };
 
 
@@ -17,7 +18,7 @@ const Log = {
 
 	/**
 	 * 로그 이벤트를 받았을 때 호출할 이벤트 핸들러 등록.
-	 * @param {function} func 이벤트 핸들러. func()
+	 * @param {function} func 이벤트 처리용 핸들러. function(item). item은 {time, text, type}. type은 LogType참고
 	 * @returns receiver id
 	 */
 	addReceiver: (func) => {
@@ -38,9 +39,9 @@ const Log = {
 		delete Log._listener_[rid];
 	},
 
-	_broadcast: () => {
+	_broadcast: (item) => {
 		for(let rid in Log._listener_) {
-			Log._listener_[rid](); // TODO 이벤트 정보를 넘겨야 하나?
+			Log._listener_[rid](item); // TODO 이벤트 정보를 넘겨야 하나?
 		}
 	},
 	
@@ -56,7 +57,7 @@ const Log = {
 		item.time = dateToString(new Date());
 
 		Log._list_.push(item);
-		Log._broadcast();
+		Log._broadcast(item);
 	},
 
 	i: (msg) => {
@@ -77,6 +78,10 @@ const Log = {
 
 	f: (msg) => {
 		Log._add({ type: LogType.FATAL, text: msg });
+	},
+
+	n: (msg) => {
+		Log._add({ type: LogType.NOTICE, text: msg });
 	},
 
 	clear: () => {
