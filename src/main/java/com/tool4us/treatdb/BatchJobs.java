@@ -1,7 +1,5 @@
 package com.tool4us.treatdb;
 
-import static com.tool4us.treatdb.tool.PMLogBank.PB;
-
 import com.tool4us.common.Logs;
 
 import lib.turbok.util.DataFileManager;
@@ -50,7 +48,6 @@ public class BatchJobs extends Thread
     
     public void doJob()
     {
-        PB.cleanUp();
         DataFileManager.deleteTempFiles(-1);
     }
     

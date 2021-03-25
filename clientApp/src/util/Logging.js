@@ -55,6 +55,7 @@ const Log = {
 		}
 
 		item.time = dateToString(new Date());
+		// console.log('Logging', item);
 
 		Log._list_.push(item);
 		Log._broadcast(item);

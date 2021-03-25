@@ -57,6 +57,8 @@ class MainFrame extends Component {
 
     return message;
     // */
+
+    apiProxy.signOut();
   }
 
   showInstanceMessage = (msg) => {
@@ -76,7 +78,7 @@ class MainFrame extends Component {
     // this.setState({ pageType:'main', databases:mock });
 
     //*
-    apiProxy.getMetaData('124816',
+    apiProxy.getMetaData(
       (res) => {
         // console.log('metadata result:', res.data.response);
         this.setState({ pageType:'main', databases:res.response });
@@ -101,16 +103,6 @@ class MainFrame extends Component {
       return;
     }
 
-    // TODO 인증
-
-    /* // authCode 서버관리
-    if( authCode !== '1234') {
-      this.showInstanceMessage('Invalid Authorized Code');
-      return;
-    }
-    // */
-
-    // console.log('main', 'onChangeUser', userID);
     localStorage.setItem('lastUser', userID);
 
     apiProxy.signIn(userID, password,
@@ -119,7 +111,8 @@ class MainFrame extends Component {
         this.refreshMetaData();
       },
       (err) => {
-        console.log('error:', err);
+        console.log(err);
+        this.showInstanceMessage('error occurs');
       }
     );
   }

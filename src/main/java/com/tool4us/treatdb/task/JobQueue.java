@@ -1,7 +1,5 @@
 package com.tool4us.treatdb.task;
 
-import static com.tool4us.treatdb.tool.PMLogBank.PB;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -94,7 +92,6 @@ public enum JobQueue implements ITaskMonitor
         {
             AnalysisJobException xe = (AnalysisJobException) e;
             
-            PB.pushKeyStatus(xe.getKey(), xe.getError());
             _working.remove(xe.getKey());
 
             Logs.warn("Error occured: {}", task.toString());

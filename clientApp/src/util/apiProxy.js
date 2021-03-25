@@ -66,7 +66,8 @@ const apiProxy = {
 		.then(res => {
 			apiProxy.leaveWaiting();
       const data = res.data;
-      console.log('signIn', res);
+      // console.log('signIn', res);
+
 			if( isvalid(data) && data.returnCode === 0 ) {
         basicHeader['x-auth-code'] = data.response.authCode;
 				if( cbSuccess ) cbSuccess(data);
@@ -76,11 +77,27 @@ const apiProxy = {
 		})
 		.catch(res => {
 			apiProxy.leaveWaiting();
-			if( cbError ) cbSuccess(res);
+			if( cbError ) cbError(res);
 		});
   },
 
-	getMetaData: (authCode, cbSuccess, cbError) => {
+  signOut: () => {
+    axios({
+			baseURL: _serverBaseUrl_,
+			url: '/signOut',
+			method: 'post',
+			timeout: 4000,
+			headers: basicHeader
+		})
+		.then(res => {
+			console.log('signed out');
+		})
+		.catch(res => {
+			console.log('signed out');
+		});
+  },
+
+	getMetaData: (cbSuccess, cbError) => {
 		apiProxy.enterWaiting();
 		
 		axios({
@@ -88,8 +105,7 @@ const apiProxy = {
 			url: '/metadata',
 			method: 'post',
 			timeout: 24000,
-			headers: basicHeader,
-			data: { authCode }
+			headers: basicHeader
 		})
 		.then(res => {
 			apiProxy.leaveWaiting();
@@ -101,7 +117,7 @@ const apiProxy = {
 		})
 		.catch(res => {
 			apiProxy.leaveWaiting();
-			if( cbError ) cbSuccess(res);
+			if( cbError ) cbError(res);
 		});
 	},
 
@@ -126,7 +142,7 @@ const apiProxy = {
 		})
 		.catch(res => {
 			apiProxy.leaveWaiting();
-			if( cbError ) cbSuccess(res);
+			if( cbError ) cbError(res);
 		});
 	},
 };

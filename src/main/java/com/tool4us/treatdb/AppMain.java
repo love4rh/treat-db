@@ -1,7 +1,6 @@
 package com.tool4us.treatdb;
 
 import static com.tool4us.treatdb.AppSetting.OPT;
-import static com.tool4us.treatdb.tool.PMLogBank.PB;
 import static com.tool4us.treatdb.task.JobQueue.JQ;
 import static com.tool4us.db.DatabaseTool.DBTOOL;
 
@@ -89,8 +88,7 @@ public class AppMain
     private void initialize() throws Exception
     {
         JQ.begin();
-        PB.initialize(OPT.resultFolder(), !OPT.isKeepOldMade());
-        
+
         DataFileManager.deleteTempFiles(-1);
 
         _batchJob = new BatchJobs();
