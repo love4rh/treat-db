@@ -3,7 +3,7 @@ import { isundef, istrue, isvalid, numberWithCommas, tickCount } from './common.
 
 
 class DiosDataSource {
-  // props: (title), columnCount, recordCount, columns, records, beginIndex, count, getMore, controller
+  // props: { (title), columnCount, recordCount, columns, records, beginIndex, count, getMore, controller }
   // columns has elemnts that have {name, type}. type: DateTime, Integer, Real, Text
   // controller: filterChanging
   constructor (props) {
@@ -194,20 +194,22 @@ class DiosDataSource {
   }
 
   getMore = (start, len, cb) => {
-    this.props.getMore(Math.max(0, start - len), len * 4, (data) => {
-      if( isvalid(data.records) ) {
-        const { records, beginIndex } = data;
-        this.state = {
-          records: records,
-          sIdx: beginIndex,
-          eIdx: beginIndex + records.length // (not inclusive)
-        };
-        if( cb ) cb(true);
-      } else {
-        // console.log('CHECK', data);
-        if( cb ) cb(false);
+    this.props.getMore(Math.max(0, start - len), len * 4,
+      (data) => {
+        if( isvalid(data.records) ) {
+          const { records, beginIndex } = data;
+          this.state = {
+            records: records,
+            sIdx: beginIndex,
+            eIdx: beginIndex + records.length // (not inclusive)
+          };
+          if( cb ) cb(true);
+        } else {
+          // console.log('CHECK', data);
+          if( cb ) cb(false);
+        }
       }
-    });
+    );
   }
 };
 

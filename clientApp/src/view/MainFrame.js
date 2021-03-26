@@ -11,10 +11,12 @@ import Toast from 'react-bootstrap/Toast'
 import UserSelector from '../view/UserSelector.js';
 import SQLFrame from '../view/SQLFrame.js';
 
-// import mock from '../mock/db.json';
+import mock from '../mock/db.json';
 
 import './MainFrame.scss';
 
+
+const debugOn = true;
 
 
 class MainFrame extends Component {
@@ -75,9 +77,6 @@ class MainFrame extends Component {
   }
 
   refreshMetaData = () => {
-    // this.setState({ pageType:'main', databases:mock });
-
-    //*
     apiProxy.getMetaData(
       (res) => {
         // console.log('metadata result:', res.data.response);
@@ -88,7 +87,7 @@ class MainFrame extends Component {
         Log.w(err);
         this.showInstanceMessage('error occurrs.');
       }
-    ); // */
+    );
   }
 
   handleChangeUser = (userID, password) => {
@@ -104,6 +103,12 @@ class MainFrame extends Component {
     }
 
     localStorage.setItem('lastUser', userID);
+
+    if( debugOn ) {
+      Log.i('signed in with ' + userID);
+      this.setState({ pageType:'main', databases:mock });
+      return;
+    }
 
     apiProxy.signIn(userID, password,
       (res) => {
