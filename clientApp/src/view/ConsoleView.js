@@ -25,11 +25,11 @@ class ConsoleView extends Component {
     this.state = {
       clientWidth: props.width,
       clientHeight: props.height,
-      redrawKey: tickCount()
+      redrawKey: 0
     };
 
     this._logRID = null;
-    this._lastUpdateTick = 0;
+    this._needToScroll = false;
     this._logDiv = React.createRef();
   }
 
@@ -39,8 +39,8 @@ class ConsoleView extends Component {
 
   // eslint-disable-next-line
   componentDidUpdate(prevProps, prevState) {
-    if( this._lastUpdateTick < prevState.redrawKey ) {
-      this._lastUpdateTick = prevState.redrawKey;
+    if( this._needToScroll ) {
+      this._needToScroll = false;
       this._logDiv.current.scrollTop = Log.size() * 20;
     }
   }
@@ -59,6 +59,7 @@ class ConsoleView extends Component {
 
   // eslint-disable-next-line
   onReceiveLog = (item) => {
+    this._needToScroll = true;
     this.setState({ redrawKey: tickCount() });
   }
 

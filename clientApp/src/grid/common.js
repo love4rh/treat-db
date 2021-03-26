@@ -75,7 +75,7 @@ export const pad3 = (n) => {
 }
 
 
-export const dateToString = (dt) => {
+export const dateToString = (dt, withMilli) => {
   const MM = dt.getMonth() + 1; // getMonth() is zero-based
   const dd = dt.getDate();
   const hh = dt.getHours();
@@ -84,7 +84,7 @@ export const dateToString = (dt) => {
   const mi = dt.getMilliseconds();
 
   return [ dt.getFullYear(), pad2(MM), pad2(dd) ].join('-')
-    + ' ' + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + '.' + pad3(mi);
+    + ' ' + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + (istrue(withMilli) ? '.' + pad3(mi) : '');
 }
 
 // [min, max] 내 임의의 숫자 반환

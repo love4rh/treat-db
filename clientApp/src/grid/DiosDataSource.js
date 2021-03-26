@@ -1,4 +1,4 @@
-import { isundef, istrue, isvalid, numberWithCommas, tickCount } from './common.js';
+import { isundef, istrue, isvalid, numberWithCommas, dateToString, tickCount } from './common.js';
 
 
 
@@ -66,10 +66,6 @@ class DiosDataSource {
     return 26;
   }
 
-  pad = (n) => {
-    return n < 10 ? '0' + n : '' + n;
-  }
-
   _getRawCellValue = (col, row) => {
     const { records, sIdx } = this.state;
     const rec = records[row - sIdx];
@@ -79,11 +75,7 @@ class DiosDataSource {
     if( rec ) {
       switch( this.getColumnType(col) ) {
         case 'DateTime':
-        {
-          const dt = new Date(rec[col]);
-          return dt.getUTCFullYear() + '-' + this.pad(dt.getUTCMonth() + 1) + '-' + this.pad(dt.getUTCDate())
-            + ' ' + this.pad(dt.getUTCHours()) + ':' + this.pad(dt.getUTCMinutes()) + ':' + this.pad(dt.getUTCSeconds());
-        }
+          return dateToString(new Date(rec[col]), false);
         case 'Text':
           return decodeURIComponent(rec[col]).replace(/[+]/g, ' ');
         default:

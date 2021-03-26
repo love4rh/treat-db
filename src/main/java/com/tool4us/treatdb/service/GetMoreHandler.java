@@ -15,8 +15,8 @@ import com.tool4us.net.http.TomyApi;
 
 
 
-@TomyApi(paths={ "/executeSql" })
-public class SQLExecuteHandler extends ApiHandler
+@TomyApi(paths={ "/moreData" })
+public class GetMoreHandler extends ApiHandler
 {
     @Override
     public String call(TomyRequestor req, TomyResponse res) throws Exception
@@ -27,26 +27,16 @@ public class SQLExecuteHandler extends ApiHandler
         if( emptyCheck(authCode, userToken) || !SM.isValidAuthCode(authCode) )
             return makeResponseJson(ApiError.InvalidAuthCode);
 
-        String dbIdx = req.bodyParameter("dbIdx");
-        String sql = req.bodyParameter("query");
+        String qid = req.bodyParameter("qid");
+        String begin = req.bodyParameter("begin");
+        String sLen = req.bodyParameter("length");
 
-        if( emptyCheck(dbIdx, sql) )
+        if( emptyCheck(qid, begin, sLen) )
         	return makeResponseJson(ApiError.MissingParameter);
 
-        String[] dbOpt = OPT.getDatabaseOption(UT.parseLong(dbIdx).intValue());
-        if( dbOpt == null )
-        	return makeResponseJson(ApiError.InvalidParameter);
-
-        JSONObject retObj = null;
+        JSONObject retObj = new JSONObject();
         
-        try
-        {
-        	retObj = DBTOOL.executeQuery(sql, dbOpt[1], dbOpt[2], dbOpt[3], dbOpt[4]);
-        }
-        catch( Exception xe )
-        {
-        	return makeResponseJson(9999, xe.getMessage(), null);
-        }
+        // TODO
 
         return makeResponseJson(retObj);
     }
