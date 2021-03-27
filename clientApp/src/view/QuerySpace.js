@@ -16,6 +16,8 @@ import GuideDataSource from '../data/GuideDataSource.js';
 import { Log } from '../util/Logging.js';
 import { AppData } from '../data/AppData.js';
 
+import sampleData from '../mock/data.json';
+
 import './QuerySpace.scss';
 
 
@@ -118,6 +120,11 @@ class QuerySpace extends Component {
     this.setState({ gridHeight: gridHeight + to - from });
   }
 
+  setDataSource = (data) => {
+    console.log(data.columns.length);
+    this.setState({ ds: new DiosDataSource(data) });
+  }
+
   handleEditorKeyDown = (ev) => {
     // console.log('handleEditorKeyDown', ev.keyCode, ev.key, ev.ctrlKey, ev.altKey, ev.shiftKey, ev.repeat);
 
@@ -136,12 +143,16 @@ class QuerySpace extends Component {
         const sTick = tickCount();
         Log.n('executing [' + makeOneLine(query) + ']');
 
+        this.setDataSource(sampleData);
+
+        /*
         apiProxy.executeQuery(AppData.getDatabase(), query,
           (res) => {
             console.log('query execute', res);
             Log.i('query executed and first query result received [' + (tickCount() - sTick) + 'ms]');
             // res.response.qid
-            this.setState({ ds: new DiosDataSource(res.response) });
+            this.setDataSource(res.response);
+            
           },
           (err) => {
             console.log('query error', err);
@@ -151,7 +162,7 @@ class QuerySpace extends Component {
               Log.w(err.data.returnMessage);
             }
           }
-        );
+        ); // */
       }
     }
   }

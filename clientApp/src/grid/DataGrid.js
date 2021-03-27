@@ -195,6 +195,14 @@ class DataGrid extends Component {
 
   // eslint-disable-next-line
   shouldComponentUpdate (nextProps, nextState) {
+    if( nextProps.dataSource !== this.props.dataSource ) {
+      console.log('DataGrid shouldComponentUpdate');
+
+      const columnWidth = this.calcIntialColumnWidth(480);
+      const { cw, ch } = this.state;
+      this.setState( DataGrid.recalculateDimension(this.props, this.state, cw, ch, columnWidth) );
+    }
+
     if( this.state.userBeginRow !== nextState.userBeginRow && this.state.beginRow !== nextState.userBeginRow ) {
       this.setBeginRow(nextState.userBeginRow);
     }
