@@ -30,7 +30,7 @@ public class SignInHandler extends ApiHandler
         }
         
         // TODO check validity of userID & password
-        if( !"ibs".equals(userID) || !"admin".equals(userID) || !"1234".equals(password) )
+        if( !("ibs".equals(userID) || "admin".equals(userID)) || !"1234".equals(password) )
         {
         	return makeResponseJson(ApiError.InvalidAuthCode);
         }

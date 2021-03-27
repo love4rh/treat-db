@@ -83,7 +83,7 @@ public abstract class ApiHandler
         return makeResponseJson(error, null);
     }
     
-    public static String makeResponseJson(HttpResponseStatus error, String msgId)
+    public static String makeResponseJson(int retCode, String retMsg, String msgId)
     {
         StringBuilder sb = new StringBuilder();
         
@@ -93,11 +93,16 @@ public abstract class ApiHandler
         {
             sb.append(",\"messageId\":\"").append(msgId).append("\"");
         }
-        sb.append(",\"returnCode\":").append(error.code())
-          .append(",\"returnMessage\":\"").append(error.reasonPhrase()).append("\"");
+        sb.append(",\"returnCode\":").append(retCode)
+          .append(",\"returnMessage\":\"").append(retMsg).append("\"");
         sb.append("}");
         
         return sb.toString();
+    }
+    
+    public static String makeResponseJson(HttpResponseStatus error, String msgId)
+    {
+    	return makeResponseJson(error.code(), error.reasonPhrase(), msgId);
     }
     
     public static String makeResponseJson(HttpResponseStatus error)

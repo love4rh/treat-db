@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-import { isundef, nvl, makeOneLine } from '../grid/common.js';
+import { isundef, nvl, makeOneLine, tickCount } from '../grid/common.js';
 
 import loader from "@monaco-editor/loader";
 import { apiProxy } from '../util/apiProxy.js';
@@ -9,6 +9,7 @@ import { apiProxy } from '../util/apiProxy.js';
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
 
 import DataGrid from '../grid/DataGrid.js';
+import DiosDataSource from '../grid/DiosDataSource.js';
 
 import GuideDataSource from '../data/GuideDataSource.js';
 
@@ -46,7 +47,7 @@ class QuerySpace extends Component {
       const textValue = localStorage.getItem('latestQuery');
 
       const properties = {
-        value: nvl(textValue, ''),
+        value: nvl(textValue, '\n'),
         language: 'sql',
         automaticLayout: true,
         roundedSelection: false,
@@ -55,6 +56,9 @@ class QuerySpace extends Component {
       }
 
       this._editor = monaco.editor.create(wrapper, properties);
+    })
+    .catch(xe => {
+      console.log('loader editor', xe);
     });
   }
 
@@ -129,14 +133,23 @@ class QuerySpace extends Component {
       if( isundef(query) || query.trim() === '' ) {
         Log.w('invalid query statements');
       } else {
+        const sTick = tickCount();
         Log.n('executing [' + makeOneLine(query) + ']');
 
         apiProxy.executeQuery(AppData.getDatabase(), query,
           (res) => {
             console.log('query execute', res);
+            Log.i('query executed and first query result received [' + (tickCount() - sTick) + 'ms]');
+            // res.response.qid
+            this.setState({ ds: new DiosDataSource(res.response) });
           },
           (err) => {
             console.log('query error', err);
+            if( isundef(err.data.returnMessage) ) {
+              Log.w('error occurrs in executing the query.');
+            } else {
+              Log.w(err.data.returnMessage);
+            }
           }
         );
       }

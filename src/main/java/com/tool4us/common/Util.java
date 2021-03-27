@@ -3,7 +3,12 @@ package com.tool4us.common;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
+
+import lib.turbok.common.ITabularData;
+import lib.turbok.data.Column;
+import lib.turbok.data.Columns;
 
 
 
@@ -220,7 +225,7 @@ public enum Util
      * Exception 없는 실수 변환. 변환할 수 없는 경우에는 null 반환함.
      */
     public Double parseDouble(String s)
-    {
+    {;
         Double d = null;
         
         try
@@ -233,6 +238,80 @@ public enum Util
         }
         
         return d;
+    }
+    
+    public JSONArray columnsToJsonArray(Columns columns)
+    {
+    	JSONArray ar = new JSONArray();
+    	
+    	for(int i = 0; i < columns.size(); ++i)
+    	{
+    		JSONObject obj = new JSONObject();
+    		Column col =  columns.getColumn(i);
+    		
+    		obj.put("name", col.getName());
+    		obj.put("type", col.getValueType().toString());
+    		
+    		ar.put(obj);
+    	}
+    	
+    	return ar;
+    }
+    
+    public JSONArray columnsToJsonArray(ITabularData ds)
+    {
+    	JSONArray ar = new JSONArray();
+    	
+    	for(int i = 0; i < ds.getColumnSize(); ++i)
+    	{
+    		JSONObject obj = new JSONObject();
+    		
+    		obj.put("name", ds.getColumnName(i));
+    		obj.put("type", ds.getColumnType(i).toString());
+    		
+    		ar.put(obj);
+    	}
+    	
+    	return ar;
+    }
+    
+    public JSONObject recordsToJsonArray(JSONObject obj, ITabularData ds, long begin, long end)
+    {
+    	JSONArray ar = new JSONArray();
+    	
+    	long r = begin;
+    	long recCount = ds.getRowSize();
+    	while( r < recCount && r <= end )
+    	{
+    		JSONArray rec = new JSONArray();
+    		for(long c = 0; c < ds.getColumnSize(); ++c)
+    		{
+    			Object value = null;
+    			
+    			try
+    			{
+    				value = ds.getCell(c, r);
+    			}
+    			catch(Exception xe)
+    			{
+    				value = null;
+    			}
+    			
+    			if( value != null )
+					rec.put(value);
+    			else
+    				rec.put("$$null$$"); // I need a fancy way to represent null value.
+    		}
+    		
+    		ar.put(rec);
+    		r += 1;
+    	}
+    	
+    	obj.put("dataBegin", begin);
+    	obj.put("dataEnd", r - 1);
+    	obj.put("data", ar);
+    	
+    	return obj;
     }
 
 }

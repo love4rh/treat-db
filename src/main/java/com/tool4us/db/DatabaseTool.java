@@ -238,6 +238,8 @@ public enum DatabaseTool
 	
 	public JSONObject executeQuery(String query, String driver, String server, String account, String password) throws Exception
 	{
+		String queryID = UT.makeRandomeString(12);
+		
 	    Class.forName(driver);
 	    Connection conn = DriverManager.getConnection(server, account, password);
 
@@ -252,6 +254,9 @@ public enum DatabaseTool
         
         long insRow = 0;
         FileMapStore resultData = null;
+        JSONObject retObj = new JSONObject();
+        
+        retObj.put("qid", queryID);
         
         try
         {
@@ -282,10 +287,14 @@ public enum DatabaseTool
                 
                 ++insRow;
             }
+            
+            retObj.put("columns", UT.columnsToJsonArray(columns));
+            retObj.put("totalRecordCount", insRow);
+            UT.recordsToJsonArray(retObj, resultData, 0, insRow - 1);
         }
         catch(Exception xe)
         {
-            throw xe;
+        	throw xe;
         }
         finally
         {
@@ -295,6 +304,6 @@ public enum DatabaseTool
                 conn.close();
         }
 	    
-	    return null;
+	    return retObj;
 	}
 }
