@@ -2,7 +2,7 @@
  * props: title, tables: table array(type, name, scheme, description)
  */
 class SchemeDataSource {
-	static _columns_ = ['T', 'Name', 'Scheme', 'Description'];
+	static _columns_ = ['T', 'Name', 'Catalog', 'Description'];
 	
 	// { title, tables }
   constructor (props) {

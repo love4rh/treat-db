@@ -17,6 +17,7 @@ import lib.turbok.data.Columns;
 import lib.turbok.data.FileMapStore;
 import lib.turbok.data.TabularDataCreator;
 import lib.turbok.task.ITaskMonitor;
+import lib.turbok.util.TabularDataTool;
 
 import static com.tool4us.common.Util.UT;
 
@@ -287,6 +288,8 @@ public enum DatabaseTool
                 
                 ++insRow;
             }
+            
+            TabularDataTool.genMetaAsJson(resultData, true);
             
             retObj.put("columns", UT.columnsToJsonArray(columns));
             retObj.put("totalRecordCount", insRow);

@@ -1,0 +1,16 @@
+{
+  "columnCount": 5,
+  "columns": [
+    { "name":"Name", "type":"Text" },
+    { "name":"Age", "type":"Integer" },
+    { "name":"Birthdate", "type":"DateTime" },
+    { "name":"Remarks", "type":"Text" },
+    { "name":"Grade", "type":"Real" }
+  ],
+  "recordCount": 2,
+  "beginIndex": 0,
+  "count": 2,
+  "records": [
+
+  ]
+}
