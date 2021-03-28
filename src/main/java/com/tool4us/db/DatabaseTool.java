@@ -289,6 +289,7 @@ public enum DatabaseTool
                 ++insRow;
             }
             
+            // columnCount, recordCount, columns, records, beginIndex, count
             TabularDataTool.genMetaAsJson(resultData, true);
             
             retObj.put("columns", UT.columnsToJsonArray(columns));

@@ -187,6 +187,7 @@ class QuerySpace extends Component {
         <div className="resultPane" style={{ flexBasis:`${gridHeight}px`, height: gridHeight, width: clientWidth }}>
           <DataGrid
             width={clientWidth}
+            height={gridHeight}
             dataSource={ds}
             userBeginRow={0}
           />
