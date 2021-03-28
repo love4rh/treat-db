@@ -5,7 +5,7 @@ import cn from 'classnames';
 
 import {
   isvalid, isundef, isBetween, nvl, calcDigitsWithCommas, tickCount, binarySearch,
-  setCurrentActiveGrid, dismissActiveGrid
+  setCurrentActiveGrid, dismissActiveGrid, proxyCall
 } from './common.js';
 
 import { DataGridScrollBar, _scrollBarWith_ } from './DataGridScrollBar.js';
@@ -59,8 +59,36 @@ class DataGrid extends Component {
     onEvent: PropTypes.func, // Grid에서 발생하는 이벤트를 전달하기 위한 속성
   }
 
-  static CalcRowNumPerpage = (height, rowHeight, headerCount) => {
+  // 페이지 당 표시 가능한 레코드 개수 계산
+  static CalcRowNumPerPage = (height, rowHeight, headerCount) => {
     return Math.ceil((height - rowHeight * headerCount) / rowHeight);
+  }
+
+  // Column의 초기 너비 계산
+  static calcIntialColumnWidth = (ds, maxWidth) => {
+    if( isundef(maxWidth) ) {
+      maxWidth = 480;
+    }
+
+    const rowHeight = ds.getRowHeight();
+    const columnCount = ds.getColumnCount();
+
+    let widthSum = 0;
+    const columnWidth = [0];
+
+    for(let c = 0; c < columnCount; ++c) {
+      let w = Math.max(50, Math.min(maxWidth, ds.getColumnName(c).length * _letterWidth_ + 16))
+         + (ds.hasColumnFilterData && ds.hasColumnFilterData(c) ? rowHeight : 0);
+
+      if( ds.getPreferedColumnWidth ) {
+        w = ds.getPreferedColumnWidth(c);
+      }
+
+      widthSum += Math.min(Math.ceil(w), maxWidth);
+      columnWidth.push(widthSum);
+    }
+
+    return columnWidth;
   }
 
   static recalculateDimension = (props, state, nw, nh, colWidth, fixedColIdx) => {
@@ -75,7 +103,7 @@ class DataGrid extends Component {
     const ds = dataSource;
     const rowHeight = ds.getRowHeight();
     const rowCount = ds.getRowCount();
-    const rowPerHeight = DataGrid.CalcRowNumPerpage(nh, rowHeight, (showColumnNumber ? 2 : 1));
+    const rowPerHeight = DataGrid.CalcRowNumPerPage(nh, rowHeight, (showColumnNumber ? 2 : 1));
 
     const fixedColWidth = colWidth && fixedColIdx > 0 ? colWidth[fixedColIdx] : 0;
     const headerWidth = showRowNumber ? calcDigitsWithCommas(rowCount) * _letterWidth_ + 24 : 0;
@@ -92,7 +120,8 @@ class DataGrid extends Component {
     }
 
     return {
-      dsModifiedTick: nvl(ds._modifiedTime, 0),
+      ds,
+      dsModifiedTick: proxyCall(ds, 'updatedTime'),
       ch: nh,
       cw: nw,
       columnWidth: colWidth,
@@ -113,10 +142,10 @@ class DataGrid extends Component {
     super(props);
 
     const { dataSource, userBeginRow, fixedColumn, showRowNumber, showColumnNumber, height, width } = this.props;
-    const columnWidth = this.calcIntialColumnWidth(480);
+    const columnWidth = DataGrid.calcIntialColumnWidth(dataSource, 480);
 
     this.state = {
-      dsModifiedTick: dataSource._modifiedTime,
+      ds: dataSource,
       beginRow: nvl(userBeginRow, 0),
       userBeginRow: nvl(userBeginRow, 0),
       scrollLeft: 0,
@@ -175,11 +204,17 @@ class DataGrid extends Component {
   static getDerivedStateFromProps(nextProps, prevState) {
     let modified = false;
     let newState = {};
+    let columnWidth = null;
+    const nextDS = nextProps.dataSource;
 
-    if( isvalid(nextProps.height) && isvalid(nextProps.width) && nextProps.height !== prevState.clientHeight && nextProps.width !== prevState.clientWidth ) {
+    if( nextDS !== prevState.ds ) {
       modified = true;
-      newState = DataGrid.recalculateDimension(nextProps, prevState, nextProps.width, nextProps.height);
-    } else if( prevState.dsModifiedTick !== nextProps.dataSource._modifiedTime ) {
+      columnWidth = DataGrid.calcIntialColumnWidth(nextDS, 480);
+      newState = DataGrid.recalculateDimension(nextProps, prevState, null, null, columnWidth);
+    } else if( isvalid(nextProps.height) && isvalid(nextProps.width) && nextProps.height !== prevState.clientHeight && nextProps.width !== prevState.clientWidth ) {
+      modified = true;
+      newState = DataGrid.recalculateDimension(nextProps, prevState, nextProps.width, nextProps.height, columnWidth);
+    } else if( prevState.dsModifiedTick !== proxyCall(nextDS, 'updatedTime') ) {
       modified = true;
       newState = DataGrid.recalculateDimension(nextProps, prevState);
     }
@@ -191,23 +226,6 @@ class DataGrid extends Component {
     }
 
     return modified ? newState : null; // null을 리턴하면 따로 업데이트 할 것은 없다라는 의미
-  }
-
-  // eslint-disable-next-line
-  shouldComponentUpdate (nextProps, nextState) {
-    if( nextProps.dataSource !== this.props.dataSource ) {
-      console.log('DataGrid shouldComponentUpdate');
-
-      const columnWidth = this.calcIntialColumnWidth(480);
-      const { cw, ch } = this.state;
-      this.setState( DataGrid.recalculateDimension(this.props, this.state, cw, ch, columnWidth) );
-    }
-
-    if( this.state.userBeginRow !== nextState.userBeginRow && this.state.beginRow !== nextState.userBeginRow ) {
-      this.setBeginRow(nextState.userBeginRow);
-    }
-
-    return true;
   }
 
   componentWillUnmount () {
@@ -225,35 +243,6 @@ class DataGrid extends Component {
   onResize = () => {
     const { clientWidth, clientHeight } = this._refMain.current;
     this.setState( DataGrid.recalculateDimension(this.props, this.state, clientWidth, clientHeight) );
-  }
-
-  // Column의 초기 너비 계산
-  calcIntialColumnWidth = (maxWidth) => {
-    if( !maxWidth ) {
-      maxWidth = 480;
-    }
-
-    const ds = this.props.dataSource;
-
-    const rowHeight = ds.getRowHeight();
-    const columnCount = ds.getColumnCount();
-
-    let widthSum = 0;
-    const columnWidth = [0];
-
-    for(let c = 0; c < columnCount; ++c) {
-      let w = Math.max(50, Math.min(maxWidth, ds.getColumnName(c).length * _letterWidth_ + 16))
-         + (ds.hasColumnFilterData && ds.hasColumnFilterData(c) ? rowHeight : 0);
-
-      if( ds.getPreferedColumnWidth ) {
-        w = ds.getPreferedColumnWidth(c);
-      }
-
-      widthSum += Math.min(Math.ceil(w), maxWidth);
-      columnWidth.push(widthSum);
-    }
-
-    return columnWidth;
   }
 
   applyColumnOption = ({ columnWidth, fixedColumn }) => {
@@ -1110,15 +1099,16 @@ class DataGrid extends Component {
   }
 
   render () {
-    const { dataSource, fixableCount } = this.props;
+    const { fixableCount } = this.props;
     const {
+      ds,
       showColumnNumber, beginRow, columnWidth, status, overCell,
       cw, ch, scrollLeft, activeFilter, filterPos, fixedColumn, inFinding,
       rowPerHeight, fixedColWidth, headerWidth, chHeight, rhWidth, rhHeight, chWidth, hScroll, vScroll
     } = this.state;
 
     const sbWidth = _scrollBarWith_;
-    const width = cw, height = ch, ds = dataSource;
+    const width = cw, height = ch;
 
     const rowHeight = ds.getRowHeight(); // 한 행의 높이
     const rowCount = ds.getRowCount();

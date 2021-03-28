@@ -1,4 +1,4 @@
-import { isundef, istrue, isvalid, numberWithCommas, dateToString, tickCount } from './common.js';
+import { isundef, istrue, isvalid, numberWithCommas, dateToString, tickCount, nvl } from './common.js';
 
 
 
@@ -29,6 +29,10 @@ class DiosDataSource {
 
   getTitle = () => {
     return this.props.title;
+  }
+
+  updatedTime = () => {
+    return this._modifiedTime;
   }
 
   getColumnCount = () => {
@@ -70,16 +74,18 @@ class DiosDataSource {
     const { records, sIdx } = this.state;
     const rec = records[row - sIdx];
 
-    // console.log('getCellValue', col, row, sIdx, eIdx);
-
     if( rec ) {
+      if( isundef(rec[col]) ) {
+        return null;
+      }
+
       switch( this.getColumnType(col) ) {
         case 'DateTime':
           return dateToString(new Date(rec[col]), false);
         case 'Text':
           return decodeURIComponent(rec[col]).replace(/[+]/g, ' ');
         default:
-          return rec[col];
+          return nvl(rec[col], '');
       }
     }
 
@@ -158,7 +164,7 @@ class DiosDataSource {
   }
 
   getPreferedColumnWidth = (c) => {
-    const letterWidth = 12 * 8.5 / 16; // 32
+    const letterWidth = 7.5;
 
     const { sIdx, eIdx } = this.state;
     let w = Math.max(50, this.getColumnName(c).length * letterWidth + 16); // minimum size of column

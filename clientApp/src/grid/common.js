@@ -6,7 +6,7 @@ export const isundef = (o) => {
 
 
 export const isvalid = (o) => {
-  return !isundef(o);
+  return o !== null && typeof(o) !== 'undefined';
 }
 
 
@@ -86,6 +86,17 @@ export const dateToString = (dt, withMilli) => {
   return [ dt.getFullYear(), pad2(MM), pad2(dd) ].join('-')
     + ' ' + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + (istrue(withMilli) ? '.' + pad3(mi) : '');
 }
+
+/**
+ * 객체 obj에 method가 있으면 호출한 결과를 반환하고 없으면 null 반환
+ * @param {*} obj 
+ * @param {string} method 
+ * @param {*} option 메소드를 호출할 때 인수로 넘길 값 
+ */
+export const proxyCall = (obj, method, option) => {
+  return (method in obj) ? obj[method](option) : null;
+}
+
 
 // [min, max] 내 임의의 숫자 반환
 export const genRandomInteger = (min, max) => {

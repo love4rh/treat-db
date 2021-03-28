@@ -121,7 +121,6 @@ class QuerySpace extends Component {
   }
 
   setDataSource = (data) => {
-    console.log(data.columns.length);
     this.setState({ ds: new DiosDataSource(data) });
   }
 
