@@ -61,3 +61,5 @@ log/
 
 mock*.txt
 
+yarn.lock
+

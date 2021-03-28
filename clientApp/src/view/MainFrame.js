@@ -16,7 +16,7 @@ import mock from '../mock/db.json';
 import './MainFrame.scss';
 
 
-const debugOn = true;
+const debugOn = false;
 
 
 class MainFrame extends Component {

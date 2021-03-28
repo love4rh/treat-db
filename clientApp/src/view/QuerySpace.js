@@ -16,7 +16,7 @@ import GuideDataSource from '../data/GuideDataSource.js';
 import { Log } from '../util/Logging.js';
 import { AppData } from '../data/AppData.js';
 
-import sampleData from '../mock/data.json';
+// import sampleData from '../mock/data.json';
 
 import './QuerySpace.scss';
 
@@ -142,9 +142,6 @@ class QuerySpace extends Component {
         const sTick = tickCount();
         Log.n('executing [' + makeOneLine(query) + ']');
 
-        this.setDataSource(sampleData);
-
-        /*
         apiProxy.executeQuery(AppData.getDatabase(), query,
           (res) => {
             console.log('query execute', res);
