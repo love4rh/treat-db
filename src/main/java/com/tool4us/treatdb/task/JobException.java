@@ -3,13 +3,13 @@ package com.tool4us.treatdb.task;
 
 
 @SuppressWarnings("serial")
-public class AnalysisJobException extends Exception
+public class JobException extends Exception
 {
     private String      _key;
     private String      _error;
 
 
-    public AnalysisJobException(String key, String error)
+    public JobException(String key, String error)
     {
         _key = key;
         _error = error;
@@ -28,6 +28,6 @@ public class AnalysisJobException extends Exception
     @Override
     public String toString()
     {
-        return "AnalysisJobException - " + _error + " : " + _key;
+        return "JobException - " + _error + " : " + _key;
     }
 }

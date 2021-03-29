@@ -16,8 +16,6 @@ import GuideDataSource from '../data/GuideDataSource.js';
 import { Log } from '../util/Logging.js';
 import { AppData } from '../data/AppData.js';
 
-// import sampleData from '../mock/data.json';
-
 import './QuerySpace.scss';
 
 
@@ -37,6 +35,7 @@ class QuerySpace extends Component {
       gridHeight: 350,
       clientWidth: props.width,
       clientHeight: props.height,
+      qid: null,
       ds
     };
 
@@ -121,7 +120,25 @@ class QuerySpace extends Component {
   }
 
   setDataSource = (data) => {
-    this.setState({ ds: new DiosDataSource(data) });
+    data.getMore = this.fetchMoreData(data.qid)
+    this.setState({ qid: data.qid, ds: new DiosDataSource(data) });
+  }
+
+  fetchMoreData = (qid) => (beginIdx, length, cb) => {
+    apiProxy.getMoreData({ qid, beginIdx, length },
+      (res) => {
+        const data = res.response;
+        // TODO something with data
+        cb(data);
+      },
+      (err) => {
+        if( err && err.data && err.data.returnMessage ) {
+          Log.w(err.data.returnMessage);
+        } else {
+          Log.w('error occurrs in getting more data.');
+        }
+      }
+    );
   }
 
   handleEditorKeyDown = (ev) => {
@@ -131,6 +148,7 @@ class QuerySpace extends Component {
     if( ev.shiftKey && ev.keyCode === 13 ) {
       ev.preventDefault();
       ev.stopPropagation();
+
       const textValue = this._editor.getValue();
       const query = this.extractQueryBlock(textValue, this._editor.getPosition());
 
@@ -142,23 +160,21 @@ class QuerySpace extends Component {
         const sTick = tickCount();
         Log.n('executing [' + makeOneLine(query) + ']');
 
-        apiProxy.executeQuery(AppData.getDatabase(), query,
+        apiProxy.executeQuery({ dbIdx: AppData.getDatabase(), query, lstQID: this.state.qid },
           (res) => {
-            console.log('query execute', res);
-            Log.i('query executed and first query result received [' + (tickCount() - sTick) + 'ms]');
-            // res.response.qid
-            this.setDataSource(res.response);
-            
+            const data = res.response;
+            // console.log('query execute', res);
+            Log.i('query executed and first result received [' + (tickCount() - sTick) + 'ms]');
+            this.setDataSource(data);
           },
           (err) => {
-            console.log('query error', err);
-            if( isundef(err.data.returnMessage) ) {
-              Log.w('error occurrs in executing the query.');
-            } else {
+            if( err && err.data && err.data.returnMessage ) {
               Log.w(err.data.returnMessage);
+            } else {
+              Log.w('error occurrs in executing the query.');
             }
           }
-        ); // */
+        );
       }
     }
   }

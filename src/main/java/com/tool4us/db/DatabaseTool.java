@@ -1,25 +1,19 @@
 package com.tool4us.db;
 
+import static com.tool4us.common.Util.UT;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+// import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Types;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import lib.turbok.common.ValueType;
-import lib.turbok.data.Columns;
-import lib.turbok.data.FileMapStore;
-import lib.turbok.data.TabularDataCreator;
-import lib.turbok.task.ITaskMonitor;
-import lib.turbok.util.TabularDataTool;
-
-import static com.tool4us.common.Util.UT;
 
 
 
@@ -236,78 +230,4 @@ public enum DatabaseTool
         
         return objList;
     }
-	
-	public JSONObject executeQuery(String query, String driver, String server, String account, String password) throws Exception
-	{
-		String queryID = UT.makeRandomeString(12);
-		
-	    Class.forName(driver);
-	    Connection conn = DriverManager.getConnection(server, account, password);
-
-        Statement stmt = conn.createStatement();
-        
-        boolean isMySQL = driver.contains("mysql");
-        
-        if( isMySQL )
-            stmt.setFetchSize(Integer.MIN_VALUE);
-
-        ResultSet rs = null;
-        
-        long insRow = 0;
-        FileMapStore resultData = null;
-        JSONObject retObj = new JSONObject();
-        
-        retObj.put("qid", queryID);
-        
-        try
-        {
-            rs = stmt.executeQuery(query);
-            rs.setFetchSize(2048);    // CHECK 이 값이 너무 크면 이상한 오류가 남.
-            
-            ResultSetMetaData rsMeta = rs.getMetaData();
-                    
-            int columnSize = rsMeta.getColumnCount();
-            Columns columns = new Columns();
-            
-            for(int c = 1; c <= columnSize; ++c)
-            {
-                String columnName = rsMeta.getColumnName(c);
-                ValueType vType = valueTypeByJDBCType(rsMeta.getColumnType(c));
-                
-                columns.addColumn(columnName, vType);
-            }
-            
-            resultData = TabularDataCreator.newTabularData(columns, 1024);
-
-            while( rs.next() )
-            {
-                for(int c = 1; c <= columnSize; ++c)
-                {
-                    resultData.setCell(c - 1, insRow, rs.getString(c));
-                }
-                
-                ++insRow;
-            }
-            
-            // columnCount, recordCount, columns, records, beginIndex, count
-            TabularDataTool.genMetaAsJson(resultData, true);
-            
-            retObj.put("columns", UT.columnsToJsonArray(columns));
-            retObj.put("totalRecordCount", insRow);
-            UT.recordsToJsonArray(retObj, resultData, 0, insRow - 1);
-        }
-        catch(Exception xe)
-        {
-        	throw xe;
-        }
-        finally
-        {
-            if( rs != null )
-                rs.close();
-            if( conn != null )
-                conn.close();
-        }
-	    
-	    return retObj;
-	}
 }

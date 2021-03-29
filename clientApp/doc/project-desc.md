@@ -1,5 +1,5 @@
 # packages
-yarn add axios react-bootstrap bootstrap node-sass@4.14.1 react-icons @monaco-editor/react @material-ui/core @material-ui/lab @material-ui/icons
+yarn add axios react-bootstrap bootstrap node-sass@4.14.1 react-icons monaco-editor @monaco-editor/react @material-ui/core @material-ui/lab @material-ui/icons
 
 
 # reference

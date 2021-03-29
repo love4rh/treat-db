@@ -11,12 +11,8 @@ import Toast from 'react-bootstrap/Toast'
 import UserSelector from '../view/UserSelector.js';
 import SQLFrame from '../view/SQLFrame.js';
 
-import mock from '../mock/db.json';
-
 import './MainFrame.scss';
 
-
-const debugOn = false;
 
 
 class MainFrame extends Component {
@@ -103,12 +99,6 @@ class MainFrame extends Component {
     }
 
     localStorage.setItem('lastUser', userID);
-
-    if( debugOn ) {
-      Log.i('signed in with ' + userID);
-      this.setState({ pageType:'main', databases:mock });
-      return;
-    }
 
     apiProxy.signIn(userID, password,
       (res) => {

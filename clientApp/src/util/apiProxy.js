@@ -121,7 +121,10 @@ const apiProxy = {
 		});
 	},
 
-  executeQuery: (dbIdx, query, cbSuccess, cbError) => {
+	/**
+	 * data: { dbIdx, query }
+	 */
+  executeQuery: (data, cbSuccess, cbError) => {
 		apiProxy.enterWaiting();
 		
 		axios({
@@ -130,7 +133,7 @@ const apiProxy = {
 			method: 'post',
 			timeout: 60000,
 			headers: basicHeader,
-			data: { dbIdx, query }
+			data: data
 		})
 		.then(res => {
 			apiProxy.leaveWaiting();
@@ -142,6 +145,27 @@ const apiProxy = {
 		})
 		.catch(res => {
 			apiProxy.leaveWaiting();
+			if( cbError ) cbError(res);
+		});
+	},
+
+	getMoreData: (data, cbSuccess, cbError) => {
+		axios({
+			baseURL: _serverBaseUrl_,
+			url: '/moreData',
+			method: 'post',
+			timeout: 5000,
+			headers: basicHeader,
+			data: data // { qid, beginIdx, length }
+		})
+		.then(res => {
+			if( isvalid(res.data) && res.data.returnCode === 0 ) {
+				if( cbSuccess ) cbSuccess(res.data);
+			} else if( cbError ) {
+			  cbError(res);
+      }
+		})
+		.catch(res => {
 			if( cbError ) cbError(res);
 		});
 	},

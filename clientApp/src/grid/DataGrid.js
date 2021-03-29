@@ -457,9 +457,8 @@ class DataGrid extends Component {
   }
 
   _setBeginRow = (newBegin) => {
-    const { dataSource, onVisibleAreaChanged } = this.props;
-    const { rowPerHeight } = this.state;
-    const ds = dataSource;
+    const { onVisibleAreaChanged } = this.props;
+    const { ds, rowPerHeight } = this.state;
 
     const rowCount = ds.getRowCount();
     newBegin = Math.max(Math.min(newBegin, rowCount - rowPerHeight + 1), 0);
@@ -580,10 +579,9 @@ class DataGrid extends Component {
     let processed = true;
 
     const { keyCode, ctrlKey, shiftKey } = ev;
-    const { dataSource } = this.props;
-    const { selectedRange, rowPerHeight, inFinding } = this.state;
-    const colCount = dataSource.getColumnCount(),
-          rowCount = dataSource.getRowCount();
+    const { ds, selectedRange, rowPerHeight, inFinding } = this.state;
+    const colCount = ds.getColumnCount(),
+          rowCount = ds.getRowCount();
 
     switch( keyCode ) {
       case 13: // Enter
@@ -668,11 +666,10 @@ class DataGrid extends Component {
 
     const edgeMargin = 2;
 
-    const { dataSource } = this.props;
-    const { showColumnNumber, columnWidth, beginRow, scrollLeft, headerWidth, cw, ch, fixedColumn } = this.state;
+    const { ds, showColumnNumber, columnWidth, beginRow, scrollLeft, headerWidth, cw, ch, fixedColumn } = this.state;
     const width = cw, height = ch;
 
-    const rowHeight = dataSource.getRowHeight(),
+    const rowHeight = ds.getRowHeight(),
       chHeight = rowHeight * (showColumnNumber ? 2 : 1),
       rhWidth = headerWidth;
 
@@ -703,7 +700,7 @@ class DataGrid extends Component {
       } else {
         x += scrollLeft;
         // TODO change find-logic to using binary search.
-        for(let c = fixedColumn + 1; c <= dataSource.getColumnCount(); ++c) {
+        for(let c = fixedColumn + 1; c <= ds.getColumnCount(); ++c) {
           if( x <= columnWidth[c] + edgeMargin ) {
             col = c - 1;
             colEdge = (x >= columnWidth[c] - edgeMargin);
@@ -746,12 +743,10 @@ class DataGrid extends Component {
     if( cell === null )
       return;
 
-    const { dataSource } = this.props;
+    const { ds, preStatus, status, statusParam, fixedColumn, clickTick } = this.state;
 
-    const ds = dataSource;
     // colCount, rowCount 모두 inclusive임
     const colCount = ds.getColumnCount() - 1, rowCount = ds.getRowCount() - 1;
-    const { preStatus, status, statusParam, fixedColumn, clickTick } = this.state;
 
     switch( ev.type ) {
     // Mouse Down
@@ -905,9 +900,9 @@ class DataGrid extends Component {
 
   handleDoneFilter = (filter) => {
     if( isvalid(filter) ) {
-      const { dataSource } = this.props;
+      const { ds } = this.state;
       // Parent한테 알리는 건 DataSource에서 하자.
-      dataSource.setColumnFilterData(this.state.activeFilter, filter);
+      ds.setColumnFilterData(this.state.activeFilter, filter);
     }
 
     this.handleCloseFilter();
@@ -957,8 +952,7 @@ class DataGrid extends Component {
   }
 
   findAll = (keyword, caseSensitive, cpos) => {
-    const { dataSource } = this.props;
-    const ds = dataSource;
+    const { ds } = this.state;
 
     const result = [];
     let cidx = null, ridx = null;

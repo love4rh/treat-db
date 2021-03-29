@@ -3,22 +3,33 @@ import { isundef, istrue, isvalid, numberWithCommas, dateToString, tickCount, nv
 
 
 class DiosDataSource {
-  // props: { (title), columnCount, recordCount, columns, records, beginIndex, count, getMore, controller }
+  // props: { (title), columnCount, recordCount, columns, records, beginIndex, getMore, controller, (fetchDone) }
   // columns has elemnts that have {name, type}. type: DateTime, Integer, Real, Text
   // controller: filterChanging
+  // fetchDone: 비동기 방식으로 데이터를 가져오는 경우 모두 가져왔는지 여부를 알아야 할 필요가 있어 추가함.
+  // 이 값이 없으면 모두 가져 온 것으로 판단하고 값이 있고 false이면 주기적으로 getMore를 호출하여 확인하도록 하자.
   constructor (props) {
     this.resetData(props);
+
     this._filterMap = {};
     this._rowFilter = null;  // 사용할 Record의 인덱스를 담고 있는 array. null이면 모든 Record를 의미함
     this._modifiedTime = tickCount();
+
+    const { getMore, fetchDone } = props;
+
+    if( isvalid(fetchDone) && !istrue(fetchDone) && isvalid(getMore) ) {
+      this._fetchDoneChecker = setTimeout(this.checkFetchDone, 1000);
+    }
   }
 
   resetData = (props) => {
     this.props = props;
 
-    const { records, beginIndex } = props;
+    const { columns, recordCount, records, beginIndex } = props;
 
     this.state = {
+      columns,
+      recordCount,
       records: records,
       sIdx: beginIndex,
       eIdx: beginIndex + records.length // (exclusive)
@@ -36,16 +47,16 @@ class DiosDataSource {
   }
 
   getColumnCount = () => {
-    return this.props.columnCount;
+    return this.state.columns.length;
   }
 
   getColumnName = (col) => {
-    return this.props.columns[col].name;
+    return this.state.columns[col].name;
   }
 
   getColumnType = (col) => {
     // unknown, string, Integer, Real, DateTime, Text
-    const type = this.props.columns[col].type;
+    const type = this.state.columns[col].type;
 
     if( type === 'Integer' || type === 'Real' ) {
       return 'number';
@@ -59,7 +70,7 @@ class DiosDataSource {
   }
 
   _getRowCount = (raw) => {
-    return !raw && this._rowFilter ? this._rowFilter.length : this.props.recordCount;
+    return !raw && this._rowFilter ? this._rowFilter.length : this.state.recordCount;
   }
 
   getRowCount = () => {
@@ -195,16 +206,47 @@ class DiosDataSource {
     this.props.getMore(Math.max(0, start - len), len * 4,
       (data) => {
         if( isvalid(data.records) ) {
-          const { records, beginIndex } = data;
-          this.state = {
-            records: records,
-            sIdx: beginIndex,
-            eIdx: beginIndex + records.length // (not inclusive)
-          };
+          const { fetchDone, records, beginIndex, recordCount } = data;
+
+          this.state.records = records;
+          this.state.sIdx = beginIndex;
+          this.state.eIdx = beginIndex + records.length; // (not inclusive)
+
+          if( isvalid(recordCount) ) {
+            this.props.recordCount = recordCount;
+            this.state.recordCount = recordCount;
+            this._modifiedTime = tickCount();
+          }
+
+          if( isundef(fetchDone) || istrue(fetchDone) ) {
+            this.props.fetchDone = true;
+          }
+
           if( cb ) cb(true);
         } else {
-          // console.log('CHECK', data);
           if( cb ) cb(false);
+        }
+      }
+    );
+  }
+
+  checkFetchDone = () => {
+    const { recordCount } = this.props;
+
+    this.props.getMore(recordCount, 1,
+      (data) => {
+        const { fetchDone, recordCount } = data;
+
+        if( isvalid(recordCount) ) {
+          this.props.recordCount = recordCount;
+          this.state.recordCount = recordCount;
+          this._modifiedTime = tickCount();
+        }
+
+        if( isvalid(fetchDone) && !istrue(fetchDone) ) {
+          this._fetchDoneChecker = setTimeout(this.checkFetchDone, 3000);
+        } else {
+          this.props.fetchDone = true;
         }
       }
     );

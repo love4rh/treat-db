@@ -35,14 +35,28 @@ public enum SessionManager
     	return session;
     }
     
-    public void removeSession(String authCode)
+    public UserSession removeSession(String authCode)
     {
     	UserSession session = _userSessions.remove(authCode);
-    	// TODO clear session object
+    	
+    	if( session != null )
+    		session.clear();
+    	
+    	return session;
     }
     
     public boolean isValidAuthCode(String authCode)
     {
     	return _userSessions.containsKey(authCode);
     }
+
+	public UserSession getSession(String authCode, String userToken)
+	{
+		UserSession us = _userSessions.get(authCode);
+
+		if( us == null || !us.getUserToken().equals(userToken))
+			return null;
+		
+		return us;
+	}
 }

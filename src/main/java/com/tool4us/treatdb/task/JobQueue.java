@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import com.tool4us.common.Logs;
+import com.tool4us.treatdb.tool.UserSession;
 
 import lib.turbok.task.ITask;
 import lib.turbok.task.ITaskMonitor;
@@ -27,24 +28,17 @@ public enum JobQueue implements ITaskMonitor
     
     public void begin()
     {
-        _taskMgr.startQueue(2, "pmlog-anal-jobq");
+        _taskMgr.startQueue(4, "treatdb-job-queue");
     }
     
     public void end()
     {
         _taskMgr.endQueue();
     }
-
-    public void pushAnalysisJob(String logUrl, String key)
+    
+    public void pushTask(ITask task)
     {
-        if( _working.containsKey(key) ) // 작업중임
-        {
-            Logs.info("Working now: {}", logUrl);
-            return;
-        }
-        
-        _working.put(key, 1);
-        _taskMgr.pushTask( new AnalysisTask(logUrl, key) );
+    	_taskMgr.pushTask(task);
     }
 
     @Override
@@ -78,9 +72,9 @@ public enum JobQueue implements ITaskMonitor
     @Override
     public void OnEndTask(ITask task)
     {
-        if( task instanceof AnalysisTask )
+        if( task instanceof DBTask )
         {
-            String key = ((AnalysisTask) task).getKey();
+            String key = ((DBTask) task).getKey();
             _working.remove(key);
         }
     }
@@ -88,14 +82,29 @@ public enum JobQueue implements ITaskMonitor
     @Override
     public void OnErrorRaised(ITask task, Throwable e)
     {
-        if( e instanceof AnalysisJobException )
+        if( e instanceof JobException )
         {
-            AnalysisJobException xe = (AnalysisJobException) e;
-            
+            JobException xe = (JobException) e;
+
             _working.remove(xe.getKey());
 
             Logs.warn("Error occured: {}", task.toString());
             Logs.trace(xe);
         }
     }
+
+	public DBTask pushFetchingJob(UserSession user, String qid
+		, String query, String driver, String server, String account, String password)
+	{
+		if( _working.containsKey(qid) )
+			return null;
+
+		_working.put(qid, 1);
+		
+		DBTask task = new DBTask(user, qid, query, driver, server, account, password);
+		
+		_taskMgr.pushTask(task);
+		
+		return task;
+	}
 }

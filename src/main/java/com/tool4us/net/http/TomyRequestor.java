@@ -250,7 +250,17 @@ public class TomyRequestor implements HttpRequest
     		_jsonBody = new JSONObject();
     	}
     	
-    	Object oVal = _jsonBody.get(paramName);
+    	Object oVal = null;
+    	
+    	try
+    	{
+    		oVal = _jsonBody.get(paramName);
+    	}
+    	catch(Exception xe)
+    	{
+    		oVal = null;
+    	}
+    	
     	return oVal == null ? null : oVal.toString();
     }
 
