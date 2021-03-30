@@ -111,7 +111,7 @@ class QuerySpace extends Component {
       e += 1;
     }
 
-    return lines.slice(s, e).join('\n');
+    return lines.slice(s, e).filter(ll => !ll.trim().startsWith('// ') && !ll.trim().startsWith('# ')).join('\n');
   }
 
   handleLayoutChanged = (from, to) => {

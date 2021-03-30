@@ -19,7 +19,7 @@ class GuideDataSource {
   }
 
   getColumnName = (col) => {
-    return 'Execute First';
+    return 'Edit query statement and execute (Shift+Enter)';
   }
 
   getColumnType = (col) => {
@@ -27,7 +27,7 @@ class GuideDataSource {
   }
 
   getPreferedColumnWidth = (c) => {
-    return 300;
+    return 400;
   }
 
   getRowCount = () => {

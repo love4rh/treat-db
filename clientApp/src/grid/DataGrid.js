@@ -743,7 +743,7 @@ class DataGrid extends Component {
     if( cell === null )
       return;
 
-    const { ds, preStatus, status, statusParam, fixedColumn, clickTick } = this.state;
+    const { ds, preStatus, status, statusParam, fixedColumn, clickTick, cw } = this.state;
 
     // colCount, rowCount 모두 inclusive임
     const colCount = ds.getColumnCount() - 1, rowCount = ds.getRowCount() - 1;
@@ -754,7 +754,7 @@ class DataGrid extends Component {
       // console.log('ScrollLeft', this.state.scrollLeft);
       // 유효한 컬럼이라면, 처음 부분이 화면에 표시될 수 있도록 스크롤 조정
       if( fixedColumn <= cell.col && cell.col < colCount ) {
-        this.ensureVisibleColumn(cell.col, -1);
+        this.ensureVisibleColumn(cell.col, x > cw / 2 ? 1 : -1);
       }
 
       if( isvalid(this._refMain.current) ) {

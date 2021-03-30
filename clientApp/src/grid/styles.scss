@@ -1,5 +1,7 @@
 $rowHeight: 26px;
 
+$clrBasicBackground: #1e1e1e;
+
 $clrHeader: #42433e;
 $clrHeaderFont: #b0b1ab;
 $clrHeaderSelected: #3e3d32;
@@ -49,7 +51,7 @@ $clrWidgetElemSelected: #52534e;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: $clrHeader;
+  background-color: $clrBasicBackground;
   outline: none;
 }  
 
