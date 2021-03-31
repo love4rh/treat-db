@@ -76,6 +76,11 @@ public class UserSession
 		_resultMeta.remove(qid);
 	}
 	
+	public boolean isValidJob(String qid)
+	{
+		return _resultMap.containsKey(qid);
+	}
+	
 	public boolean isValid()
 	{
 		return _valid;

@@ -1,5 +1,5 @@
 /**
- * props: title, tables: table array(type, name, scheme, description)
+ * props: title, tables:[table array(type, name, scheme, description)]
  */
 class SchemeDataSource {
 	static _columns_ = ['T', 'Name', 'Catalog', 'Description'];
@@ -8,7 +8,7 @@ class SchemeDataSource {
   constructor (props) {
 		this.props = props;
   }
-
+  
   getTitle = () => {
     return this.props.title;
   }
@@ -43,28 +43,39 @@ class SchemeDataSource {
   getCellValue = (col, row) => {
 		const rec = this.props.tables[row];
 
+    if( !rec ) {
+      return '';
+    }
+
 		if( col === 0 ) {
 			return rec['type']; // .substring(0, 1);
-		} else if( col == 1 ) {
+		} else if( col === 1 ) {
 			return rec['name'];
 		} else if( col === 2 ) { // scheme
 			return rec['scheme'];
-		} else if( col == 3 ) {
+		} else if( col === 3 ) {
 			return rec['description'];
 		}
 
     return '';
   }
 
-  getColumnsData = (row) => {
-    const rec = this.props.tables[row];
-    return rec['columns'];
-  }
-
   // eslint-disable-next-line
   isValid = (begin, end) => {
     return true;
   }
+
+  // DataGrid가 아니라 MetaViewer에서 호출함.
+  getColumnsData = (row) => {
+    const rec = this.props.tables[row];
+
+    if( !rec ) {
+      return [];
+    }
+
+    return rec['columns'];
+  }
+
 }
 
 export default SchemeDataSource;

@@ -55,6 +55,8 @@ public enum AppSetting
     private boolean     _keepOld = true;
     
     private Map<String, String>     _param = new TreeMap<String, String>();
+
+    private Map<String, String>		_accountMap = new TreeMap<String, String>();
     
     private JSONArray	_dbInfo = null;
 
@@ -108,7 +110,14 @@ public enum AppSetting
         if( _temporaryFolder == null )
             _temporaryFolder = UsefulTool.GetModulePath() + File.separator + "temporary";
 
-        // System.out.println(_options.toJsonString());
+        JSONObject accountObj = _options.getAsObject("account");
+        if( accountObj != null )
+        {
+        	for(String account: accountObj.keySet())
+        	{
+        		_accountMap.put(account, accountObj.get(account).toString());
+        	}
+        }
     }
     
     public int port()
@@ -227,5 +236,15 @@ public enum AppSetting
 	public String getMetadataAsString()
 	{
 		return _dbInfo == null ? "[]" : _dbInfo.toString();
+	}
+	
+	public boolean isValidAccount(String account, String password)
+	{
+		String comp = _accountMap.get(account);
+
+		if( comp == null )
+			return false;
+		
+		return comp.equals(password);
 	}
 }

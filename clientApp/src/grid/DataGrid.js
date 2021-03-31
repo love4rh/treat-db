@@ -211,6 +211,7 @@ class DataGrid extends Component {
       modified = true;
       columnWidth = DataGrid.calcIntialColumnWidth(nextDS, 480);
       newState = DataGrid.recalculateDimension(nextProps, prevState, null, null, columnWidth);
+      newState.beginRow = 0;
     } else if( isvalid(nextProps.height) && isvalid(nextProps.width) && nextProps.height !== prevState.clientHeight && nextProps.width !== prevState.clientWidth ) {
       modified = true;
       newState = DataGrid.recalculateDimension(nextProps, prevState, nextProps.width, nextProps.height, columnWidth);
@@ -721,7 +722,7 @@ class DataGrid extends Component {
       row += beginRow;
     }
 
-    return { col: col, row: row, colEdge: colEdge, rowEdge: rowEdge };
+    return row >= ds.getRowCount() ? null : { col: col, row: row, colEdge: colEdge, rowEdge: rowEdge };
   }
 
   onMouseEvent = (ev) => {
@@ -805,6 +806,8 @@ class DataGrid extends Component {
             statusParam: { colSel: cell.col, rowSel: cell.row },
             clickTick: [clickTick[1], cTick]
           });
+
+          //
           this.relayEvent(GridEvent.CELL_SELECTED, { column:cell.col, row:cell.row, status:newStatus });
         }
       }

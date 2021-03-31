@@ -42,7 +42,7 @@ class ColumnDataSource {
   }
 
   getRowCount = () => {
-    return this.props.columns.length;
+    return this.props && this.props.columns ? this.props.columns.length : 0;
   }
 
   getRowHeight = () => {
@@ -50,7 +50,15 @@ class ColumnDataSource {
   }
 
   getCellValue = (col, row) => {
+    if( !this.props || !this.props.columns ) {
+      return '';
+    }
+
 		const rec = this.props.columns[row];
+
+    if( !rec ) {
+      return '';
+    }
 
 		if( col === 0 ) {
 			return rec['type']; // .substring(0, 1);

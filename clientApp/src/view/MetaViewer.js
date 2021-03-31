@@ -98,13 +98,11 @@ class MetaViewer extends Component {
 
     const value = ev.target.value;
     const pattern = new RegExp(value, 'i');
+    const tables = metaList.filter((m) => value === '' || pattern.test(m.name) || pattern.test(m.description));
 
-    const ds = new SchemeDataSource({
-      title: 'TableList',
-      tables: metaList.filter((m) => value === '' || pattern.test(m.name) || pattern.test(m.description))
-    });
+    console.log('handleFilterChange', tables);
 
-    this.setState({ filterText: value, dsScheme: ds });
+    this.setState({ filterText: value, dsScheme: new SchemeDataSource({ title: 'TableList', tables }) });
   }
 
   handleLayoutChanged = (from, to) => {

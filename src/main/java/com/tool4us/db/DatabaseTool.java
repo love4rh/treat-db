@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 // import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 
 import org.json.JSONArray;
@@ -230,4 +231,49 @@ public enum DatabaseTool
         
         return objList;
     }
+	
+	/**
+	 * 
+	 * @param sql
+	 * @param driver
+	 * @param server
+	 * @param account
+	 * @param password
+	 * @return executed result. [affected record count, processing time]
+	 * @throws Exception
+	 */
+	public Object[] executeSQL(String sql, String driver, String server, String account, String password) throws Exception
+	{
+		long sTick = UT.tickCount();
+		Object[] retObj = new Object[] { 0, 0 };
+
+    	Class.forName(driver);
+	    Connection conn = DriverManager.getConnection(server, account, password);
+
+        Statement stmt = conn.createStatement();
+        boolean isMySQL = driver.contains("mysql");
+
+        if( isMySQL )
+            stmt.setFetchSize(Integer.MIN_VALUE);
+
+        try
+        {
+            stmt.execute(sql);
+            retObj[0] = stmt.getUpdateCount();
+            retObj[1] = UT.tickCount() - sTick;
+        }
+        catch(Exception xe)
+        {
+        	throw xe;
+        }
+        finally
+        {
+        	if( stmt != null )
+            	stmt.close();
+            if( conn != null )
+                conn.close();
+        }
+        
+        return retObj;
+	}
 }

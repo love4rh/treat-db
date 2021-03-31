@@ -36,6 +36,8 @@ public class DBTask extends ITask
 	private String		_account;
 	private String		_password;
 	
+	private long		_sTick = 0;
+	
 	private Exception	_exception = null;
 	private String		_initialData = null;
 	
@@ -74,7 +76,7 @@ public class DBTask extends ITask
     @Override
     public void run() throws Exception
     {
-    	long sTick = UT.tickCount();
+    	_sTick = UT.tickCount();
     	
     	Class.forName(_driver);
 	    Connection conn = DriverManager.getConnection(_server, _account, _password);
@@ -109,10 +111,10 @@ public class DBTask extends ITask
             }
             
             _resultData = TabularDataCreator.newTabularData(columns, 1024);
-            _session.pushTaskResult(_qid, _resultData, UT.tickCount() - sTick);
+            _session.pushTaskResult(_qid, _resultData, UT.tickCount() - _sTick);
 
             boolean hasNext = rs.next();
-            while( _session.isValid() && hasNext )
+            while( _session.isValidJob(_qid) && hasNext )
             {
                 for(int c = 1; c <= columnSize; ++c)
                 {
@@ -141,8 +143,10 @@ public class DBTask extends ITask
             	}
             }
 
-            Logs.info("QID:[{}], COLUMN:[{}], RECORD:[{}], PROCTIME:[{} ms]", _qid, columnSize, insRow, UT.tickCount() - sTick);
-            _session.doneTaskResult(_qid, _resultData, UT.tickCount() - sTick);
+            Logs.info("QID:[{}], COLUMN:[{}], RECORD:[{}], PROCTIME:[{} ms]"
+            	, _qid, columnSize, insRow, UT.tickCount() - _sTick);
+
+            _session.doneTaskResult(_qid, _resultData, UT.tickCount() - _sTick);
         }
         catch(Exception xe)
         {
@@ -171,6 +175,7 @@ public class DBTask extends ITask
     	
     	sb.append("\"qid\":\"").append(_qid).append("\"");
     	sb.append(",\"fetchDone\":").append(fetchDone);
+    	sb.append(",\"procTime\":").append(UT.tickCount() - _sTick);
     	sb.append(",").append(TabularDataTool.genMetaAsJson(_resultData, false));
     	sb.append(",").append(TabularDataTool.genRecordsAsJson(_resultData, 0, row));
     	

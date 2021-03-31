@@ -160,18 +160,24 @@ class QuerySpace extends Component {
         const sTick = tickCount();
         Log.n('executing [' + makeOneLine(query) + ']');
 
-        apiProxy.executeQuery({ dbIdx: AppData.getDatabase(), query, lstQID: this.state.qid },
+        const isQuery = query.trim().substring(0, 9).toLowerCase().startsWith('select ');
+
+        apiProxy.executeQuery({ dbIdx:AppData.getDatabase(), query, isQuery, lstQID:(isQuery ? this.state.qid : null) },
           (res) => {
             const data = res.response;
             // console.log('query execute', res);
-            Log.i('query executed and first result received [' + (tickCount() - sTick) + 'ms]');
-            this.setDataSource(data);
+            if( isQuery ) {
+              Log.i('the statement executed and first result received [' + (tickCount() - sTick) + 'ms]');
+              this.setDataSource(data);
+            } else {
+              Log.i('the statement executed and ' + data.affectedCount + ' record(s) affected [' + (tickCount() - sTick) + 'ms]');
+            }
           },
           (err) => {
             if( err && err.data && err.data.returnMessage ) {
               Log.w(err.data.returnMessage);
             } else {
-              Log.w('error occurrs in executing the query.');
+              Log.w('error occurrs in executing the statement.');
             }
           }
         );
