@@ -1,4 +1,4 @@
-import { isvalid, nvl, numberWithCommas } from '../grid/common.js';
+// import { isvalid, nvl, numberWithCommas } from '../grid/common.js';
 
 
 
@@ -62,11 +62,12 @@ class ColumnDataSource {
 
 		if( col === 0 ) {
 			return rec['type']; // .substring(0, 1);
-		} else if( col == 1 ) {
+      // return (<span style={{color:'red'}}>{rec['type']}</span>);
+		} else if( col === 1 ) {
 			return rec['name'];
 		} else if( col === 2 ) {
 			return rec['description'];
-		} else if( col == 3 ) {
+		} else if( col === 3 ) {
       return rec['nullable'];
 		}
 

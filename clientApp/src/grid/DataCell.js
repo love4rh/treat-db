@@ -26,10 +26,12 @@ class DataCell extends Component {
     super(props);
 
     const { value, fixedType } = this.props;
+    const isObject = typeof value === 'object';
 
     this.state = {
       editable: 0, // 0: 에디트 불가, 1: 에디트 가능, 2: 에디팅
       value: isvalid(value) ? '' + value : '',
+      isObject,
       fixedType
     };
   }
@@ -62,9 +64,9 @@ class DataCell extends Component {
 
   handleClick = (ev) => {
     const { selected, col, row } = this.props;
-    const { editable } = this.state;
+    const { editable, isObject } = this.state;
 
-    if( editable === 1 ) {
+    if( editable === 1 && !isObject ) {
       ev.preventDefault();
       ev.stopPropagation();
 
@@ -105,8 +107,8 @@ class DataCell extends Component {
   }
 
   render () {
-    const { type, selected, width, height, lineHeight } = this.props;
-    const { value, editable, fixedType } = this.state;
+    const { type, selected, width, height, lineHeight, children } = this.props;
+    const { value, editable, fixedType, isObject } = this.state;
 
     return (
       <React.Fragment>
@@ -125,7 +127,7 @@ class DataCell extends Component {
             style={{ width, height, lineHeight, flexBasis:width }}
             onClick={this.handleClick}
           >
-            { 'number' === type ? numberWithCommas(value) : value }
+            { isObject ? children : ('number' === type ? numberWithCommas(value) : value) }
           </div>
         }
       </React.Fragment>
