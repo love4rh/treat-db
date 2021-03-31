@@ -78,7 +78,7 @@ public class UserSession
 	
 	public boolean isValidJob(String qid)
 	{
-		return _resultMap.containsKey(qid);
+		return isValid() && _resultMap.containsKey(qid);
 	}
 	
 	public boolean isValid()

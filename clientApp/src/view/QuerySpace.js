@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 
 import { isundef, nvl, makeOneLine, tickCount } from '../grid/common.js';
 
-import loader from "@monaco-editor/loader";
+import * as monaco from 'monaco-editor';
+
 import { apiProxy } from '../util/apiProxy.js';
 
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
@@ -43,24 +44,21 @@ class QuerySpace extends Component {
   }
 
   componentDidMount() {
-    loader.init().then(monaco => {
-      const wrapper = document.getElementById('monacoSqlEditor');
-      const textValue = localStorage.getItem('latestQuery');
+    const wrapper = document.getElementById('monacoSqlEditor');
+    const textValue = localStorage.getItem('latestQuery');
 
-      const properties = {
-        value: nvl(textValue, '\n'),
-        language: 'sql',
-        automaticLayout: true,
-        roundedSelection: false,
-	      scrollBeyondLastLine: false,
-        theme: 'vs-dark'
-      }
+    const properties = {
+      value: nvl(textValue, '\n'),
+      language: 'sql',
+      automaticLayout: true,
+      roundedSelection: false,
+      scrollBeyondLastLine: false,
+      theme: 'vs-dark'
+    }
 
-      this._editor = monaco.editor.create(wrapper, properties);
-    })
-    .catch(xe => {
-      console.log('loader editor', xe);
-    });
+    this._editor = monaco.editor.create(wrapper, properties);
+
+    // monaco.languages.registerCompletionItemProvider('sql', { provideCompletionItems: this.getCompletionProvider });
   }
 
   componentWillUnmount() {
@@ -73,6 +71,10 @@ class QuerySpace extends Component {
     }
 
     return null;
+  }
+
+  getCompletionProvider = (model, position) => {
+    console.log('getCompletionProvider', model, position);
   }
 
   extractQueryBlock = (text, pos) => {

@@ -29,6 +29,11 @@ class DataRecord extends Component {
 
     for(let c = fixedColumn; c < colCount; ++c) {
       const width = getColumnWidth(c);
+      const cellValue = ds.getCellValue(c, row);
+
+      // if( c === 0 && typeof cellValue === 'object' ) {
+      //   console.log('DataRecord render', cellValue);
+      // }
 
       tagList.push(
         <DataCell
@@ -38,11 +43,13 @@ class DataRecord extends Component {
           width={width}
           height={rowHeight}
           lineHeight={lineHeight}
-          value={ds.getCellValue(c, row)}
+          value={cellValue}
           doHoldEvent={doHoldEvent}
           col={c}
           row={row}
-        />
+        >
+          { cellValue }
+        </DataCell>
       );
 
       left += width;
