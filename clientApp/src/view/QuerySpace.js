@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 
 import { isundef, nvl, makeOneLine, tickCount } from '../grid/common.js';
 
-import loader from "@monaco-editor/loader";
+import * as monaco from 'monaco-editor';
+
 import { apiProxy } from '../util/apiProxy.js';
 
 import { LayoutDivider, DividerDirection } from '../component/LayoutDivider.js';
@@ -43,7 +44,7 @@ class QuerySpace extends Component {
   }
 
   componentDidMount() {
-    loader.init().then(monaco => {
+    // loader.init().then(monaco => {
       const wrapper = document.getElementById('monacoSqlEditor');
       const textValue = localStorage.getItem('latestQuery');
 
@@ -57,10 +58,10 @@ class QuerySpace extends Component {
       }
 
       this._editor = monaco.editor.create(wrapper, properties);
-    })
-    .catch(xe => {
-      console.log('loader editor', xe);
-    });
+    // })
+    // .catch(xe => {
+    //   console.log('loader editor', xe);
+    // });
   }
 
   componentWillUnmount() {

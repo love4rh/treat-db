@@ -1,0 +1,30 @@
+app:
+  id: treatDB
+  version: 1.0
+
+folder:
+  temporary: "./temporary"
+  vroot: "./rootPathToClientApp"
+
+network:
+  port: 8080
+  bossThread: 1
+  workerThread: 4
+
+setting:
+  withConsole: false
+
+logging:
+  level: 0
+  useFile: true
+
+# 사용할 데이터베이스 설정
+database:
+- name: ALIAS
+  server: "connection string"
+  account: "user account"
+  password: "password"
+
+# 접속 계정 정의
+account:
+  admin: "password"
