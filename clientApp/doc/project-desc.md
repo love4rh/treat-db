@@ -44,7 +44,7 @@ https://stackoverflow.com/questions/23024460/javascript-i-created-a-blob-from-a-
 
 
 ## Monaco Editor Reference
-- Monaco Editor Wrapper: https://www.npmjs.com/package/@monaco-editor/react
 - Monaco Editor Git: https://microsoft.github.io/monaco-editor/playground.html
-- Play Ground: https://monaco-react.surenatoyan.com/
 - Monaco Editor API: https://microsoft.github.io/monaco-editor/api/modules/monaco.editor.html
+
+- Custom Intellisense: https://mono.software/2017/04/11/custom-intellisense-with-monaco-editor/
