@@ -21,6 +21,16 @@ import './QuerySpace.scss';
 
 
 
+const createSuggestions = () => {
+  return [{
+    label: '"mkdirp"',
+    kind: monaco.languages.CompletionItemKind.Function,
+    documentation: "Recursively mkdir, like <code>mkdir -p</code>",
+    insertText: '"mkdirp": "*"'
+  }];
+}
+
+
 class QuerySpace extends Component {
   static propTypes = {
     width: PropTypes.number,
@@ -49,7 +59,7 @@ class QuerySpace extends Component {
 
     const properties = {
       value: nvl(textValue, '\n'),
-      language: 'sql',
+      language: 'mysql',
       automaticLayout: true,
       roundedSelection: false,
       scrollBeyondLastLine: false,
@@ -58,7 +68,9 @@ class QuerySpace extends Component {
 
     this._editor = monaco.editor.create(wrapper, properties);
 
-    // monaco.languages.registerCompletionItemProvider('sql', { provideCompletionItems: this.getCompletionProvider });
+    // monaco.languages.registerCompletionItemProvider('mysql', {
+    //   provideCompletionItems: this.getCompletionProvider
+    // });
   }
 
   componentWillUnmount() {
@@ -72,9 +84,11 @@ class QuerySpace extends Component {
 
     return null;
   }
-
+  
   getCompletionProvider = (model, position) => {
-    console.log('getCompletionProvider', model, position);
+    return {
+      suggestions: createSuggestions()
+    };
   }
 
   extractQueryBlock = (text, pos) => {

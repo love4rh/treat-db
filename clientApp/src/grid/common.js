@@ -83,6 +83,10 @@ export const dateToString = (dt, withMilli) => {
   const ss = dt.getSeconds();
   const mi = dt.getMilliseconds();
 
+  if( mi > 0 ) {
+    withMilli = true;
+  }
+
   return [ dt.getFullYear(), pad2(MM), pad2(dd) ].join('-')
     + ' ' + [ pad2(hh), pad2(mm), pad2(ss) ].join(':') + (istrue(withMilli) ? '.' + pad3(mi) : '');
 }

@@ -87,7 +87,7 @@ class MetaViewer extends Component {
     const ds = new SchemeDataSource({ title: 'TableList', tables: databases[idx]['scheme'] });
 
     this.setState({ selected: idx, filterText: '', dsScheme: ds, tableShown: 0 });
-    AppData.setDatabase(idx);
+    AppData.setDatabase(idx, databases[idx]['scheme']);
 
     Log.i('Database changed to "' + databases[idx]['name'] + '"');
   }
