@@ -17,6 +17,20 @@ $clrNotice: #5ed8ef;
   overflow: auto;
 }
 
+.consoleLogDiv::-webkit-scrollbar {
+  width: 10px;
+}
+
+.consoleLogDiv::-webkit-scrollbar-thumb {
+  background-color: #656662;
+  border-radius: 10px;
+}
+
+.consoleLogDiv::-webkit-scrollbar-track {
+  background-color: #2e2e2e;
+  border-radius: 10px;
+}
+
 .consoleItem {
   height: 20px;
   font-size: 14px;
